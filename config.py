@@ -3,7 +3,7 @@ from PDMD import get_config
 CONFIGS = {
     'data_config': {
         'main_path': './',
-        'dataset': 'energy_dataset',
+        'dataset': 'ENERGY_DATASET',
         'model': 'ChemGNN_energy',
     },
     'training_config': {
