@@ -147,7 +147,7 @@ CONFIGS = {
     'data_config': {
         'main_path': './',
         'dataset': 'FORCES_DATASET',
-        'model': 'ChemGNN_energy',
+        'model': 'ChemGNN_force',
     },
     'training_config': {
         'device_type': 'cpu',
