@@ -12,14 +12,14 @@ data-driven molecular simulations.
 ![PDMD](./images/model_structure.jpg)
 # Contents
 
-* [1 Structure of the Repository](#1-Structure of the Repository)
-* [2 Getting Started](#2-Getting Started)
-  * * [4.1 Preparations](#41-preparations)
-  * [4.2 Install Packages](#42-install-packages)
-  * [4.3 Prepare Datasets](#43-prepare-datasets)
-  * [4.4 Edit the Configuration File](#44-edit-the-configuration-file)
-  * [4.5 Run Testing](#45-run-testing)
-  * [4.6 Run Training](#46-run-training) 
+* [1 Structure of the Repository](#1-structure-of-the-repository)
+* [2 Getting Started](#2-getting-started)
+  * [2.1 Preparations](#21-preparations)
+  * [2.2 Install Packages](#22-install-packages)
+  * [2.3 Prepare Datasets](#23-prepare-datasets)
+  * [2.4 Edit the Configuration File](#24-edit-the-configuration-file)
+  * [2.5 Run Testing](#25-run-testing)
+  * [2.6 Run Training](#26-run-training) 
 * [3 Examples](#3-examples)
 * [4 Citation](#4-citation)
 * [5 Questions](#5-questions)
@@ -33,9 +33,9 @@ PDMD
 ├────── models/
 ├────── utils/
 ├────── test/
-├── dataset/
-├────── energy_dataset/
-├────── force_dataset/
+├── PDMD_DATASET/
+├────── ENERGY_DATASET/
+├────── FORCES_DATASET/
 ├── logs
 ├── saves
 ├── images
@@ -49,8 +49,8 @@ PDMD
 - `PDMD/models/`: folder contains the model scripts
 - `PDMD/utility/`: folder contains the utility scripts
 - `PDMD/test/`: folder contains the test and MD scripts
-- `dataset/energy_dataset/`: folder contains the processed data for the energy model
-- `dataset/force_dataset/`: folder contains the processed data for the force model
+- `PDMD_DATASET/ENERGY_DATASET/`: folder contains the processed data for the energy model
+- `PDMD_DATASET/FORCES_DATASET/`: folder contains the processed data for the force model
 - `logs/`: folder contains the files for logs
 - `saves/`: folder contains saved models and training record figures
 - `images/`: folder contains some important figures
@@ -115,13 +115,18 @@ CUDA Example (If you are not using CUDA 11.3, please modify the suffix part "cuX
 ```
 
 ## 2.3 Prepare Datasets
-The energy and force datasets required to run the simulations are already included with this repository. The (H<sub>2</sub>O)<sub>{n≤21}</sub> `.pt` files can be found in the following location:
+The energy and force dataset required for running model training can be downloaded via the link.
+[Download Dataset](https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/PDMD_DATASET.tar.gz)
+The download will take approximately several tens of minutes, and produce a compressed file of about 66GB. After extracting the file, you will obtain a folder named `PDMD_DATASET`. Please place this folder into the project directory to match the structure shown in **1. Structure of the Repository**.
+
+
+The (H<sub>2</sub>O)<sub>{n≤21}</sub> `.pt` files can be found in the following location:
 
 - **Energy Dataset**: Contains data required for energy predictions.
-  - Path: `dataset/energy_dataset/full/processed`
+  - Path: `PDMD_DATASET/ENERGY_DATASET`
 
 - **Force Dataset**: Contains data required for force predictions.
-  - Path: `dataset/force_dataset/full/processed`
+  - Path: `PDMD_DATASET/FORCES_DATASET`
 
 
 
@@ -141,7 +146,7 @@ from PDMD import get_config
 CONFIGS = {
     'data_config': {
         'main_path': './',
-        'dataset': 'energy_dataset',
+        'dataset': 'FORCES_DATASET',
         'model': 'ChemGNN_energy',
     },
     'training_config': {
@@ -162,8 +167,8 @@ config = get_config(CONFIGS)
 
 At this step, you have the flexibility to make adjustments to the dataset and model type. You need to choose whether to train the energy model or the force model. 
 
-- If `'dataset': 'energy_dataset'` and `'model': 'ChemGNN_energy'`, it indicates that the energy dataset is loaded and the energy model is trained.
-- If `'dataset': 'force_dataset'` and `'model': 'ChemGNN_force'`, it indicates that the force dataset is loaded and the force model is trained.
+- If `'dataset': 'ENERGY_DATASET'` and `'model': 'ChemGNN_energy'`, it indicates that the energy dataset is loaded and the energy model is trained.
+- If `'dataset': 'FORCES_DATASET'` and `'model': 'ChemGNN_force'`, it indicates that the force dataset is loaded and the force model is trained.
 
 ## 2.5 Run Testing
 
@@ -205,7 +210,7 @@ test_true.npy
 
 # 3. Examples
 ![MAE](images/MAE_scatter.jpg)
-The mean absolute errors (MAEs) of PDMD for (a) system energy, and (b) atomic force, across all (H\textsubscript{2}O)\textsubscript{1$\leq$n$\leq$21} clusters.
+The mean absolute errors (MAEs) of PDMD for (a) system energy, and (b) atomic force, across all (H<sub>2</sub>O)<sub>1&le;n&le;21</sub> clusters.
 
 # 4. Citation
 None
