@@ -14,7 +14,7 @@ class Config:
         self.seed = base_config['training_config']['seed']
         self.train_ratio = base_config['training_config']['train_length']
         self.val_ratio = base_config['training_config']['val_length']
-        self.process_dst_path = os.path.join(self.main_path, 'dataset', self.dataset)
+        self.process_dst_path = os.path.join(self.main_path, 'PDMD_DATASET', self.dataset)
         self.timestring = None
 
 
