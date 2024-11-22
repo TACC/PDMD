@@ -3,8 +3,8 @@ from PDMD import get_config
 CONFIGS = {
     'data_config': {
         'main_path': './',
-        'dataset': 'ENERGY_DATASET',
-        'model': 'ChemGNN_energy',
+        'dataset': 'FORCES_DATASET',
+        'model': 'ChemGNN_force',
     },
     'training_config': {
         'device_type': 'cpu',
