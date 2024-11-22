@@ -19,7 +19,7 @@ class MutilWaterDataset(InMemoryDataset):
 
     @property
     def processed_dir(self):
-        return osp.join(self.root, 'full', 'processed')
+        return self.root
 
     @property
     def processed_file_names(self):
