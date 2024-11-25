@@ -71,7 +71,7 @@ This project is developed using Python 3.9 and is compatible with macOS, Linux, 
 (1) Clone the repository to your workspace.
 
 ```shell
-~ $ git clone 
+~ $ git clone https://github.com/TACC/PDMD
 ```
 
 (2) Navigate into the repository.
