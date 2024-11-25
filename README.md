@@ -116,7 +116,9 @@ CUDA Example (If you are not using CUDA 11.3, please modify the suffix part "cuX
 
 ## 2.3 Prepare Datasets
 The energy and force dataset required for running model training can be downloaded via the link below:
-           wget https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/PDMD_DATASET.tar.gz
+```shell
+(venv) ~/PDMD $ wget https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/PDMD_DATASET.tar.gz
+```
 The download will take approximately several tens of minutes, and produce a compressed file of about 66GB. After extracting the file, you will obtain a folder named `PDMD_DATASET`. Please place this folder into the project directory to match the structure shown in **1. Structure of the Repository**.
 
 
