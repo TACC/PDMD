@@ -96,7 +96,7 @@ You can use the command deactivate to exit the virtual environment at any time.
 (venv) ~/PDMD $ pip install -r requriements.txt
 ```
 
-(2) Install homemade `dscribe` follows the procedure below:
+(2) Install homemade `dscribe` following the procedure below:
 ```shell
 (venv) ~/PDMD $ wget https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/dscribe.tar.gz
 ```
