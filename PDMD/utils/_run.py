@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import random
 import json
+import warnings
 from ..models import ENERGY_Model, FORCE_Model
 from . import get_timestring, MutilWaterDataset, split_dataset, worker_init_fn, train, val, draw_two_dimension, reverse_min_max_scaler_1d
 
@@ -17,6 +18,7 @@ from . import get_timestring, MutilWaterDataset, split_dataset, worker_init_fn, 
 # os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
 # torch.set_default_dtype(torch.float64)
+warnings.filterwarnings("ignore", category=UserWarning, message="TypedStorage is deprecated")
 
 def run(config):
     np.random.seed(config.seed)
