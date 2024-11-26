@@ -117,7 +117,6 @@ CPU Example:
 (venv) ~/PDMD $ pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.11.0+cpu.html
 (venv) ~/PDMD $ pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.11.0+cpu.html
 (venv) ~/PDMD $ pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.11.0+cpu.html
-(venv) ~/PDMD $ pip install torch-geometric
 ```
 
 CUDA Example (If you are not using CUDA 11.3, please modify the suffix part "cuXXX" of each following url to match your CUDA version):
@@ -125,7 +124,6 @@ CUDA Example (If you are not using CUDA 11.3, please modify the suffix part "cuX
 (venv) ~/PDMD $ pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.11.0+cu113.html
 (venv) ~/PDMD $ pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.11.0+cu113.html
 (venv) ~/PDMD $ pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.11.0+cu113.html
-(venv) ~/PDMD $ pip install torch-geometric
 ```
 
 ## 2.3 Prepare Datasets
