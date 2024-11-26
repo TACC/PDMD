@@ -48,11 +48,11 @@ def run(config):
 
     trainset_list = []
     valset_list = []
-    assert config.dataset in ["energy_dataset", "force_dataset"]
+    assert config.dataset in ["ENERGY_DATASET", "FORCES_DATASET"]
     data_type = None
-    if config.dataset == 'energy_dataset':
+    if config.dataset == 'ENERGY_DATASET':
         data_type = 'energy'
-    elif config.dataset == 'force_dataset':
+    elif config.dataset == 'FORCES_DATASET':
         data_type = 'force'
     for i in range(1, 22):
         dataset = MutilWaterDataset(root=dataset_path, split=f"{i}water_{data_type}")
