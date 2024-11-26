@@ -96,7 +96,21 @@ You can use the command deactivate to exit the virtual environment at any time.
 (venv) ~/PDMD $ pip install -r requriements.txt
 ```
 
-(2) Install packages `torch-scatter`, `torch-sparse`, `torch-cluster` and `torch-geometric` manually corresponding to your operating systems and GPU version.
+(2) Install homemade `dscribe` follows the procedure below:
+```shell
+(venv) ~/PDMD $ wget https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/dscribe.tar.gz
+```
+```shell
+(venv) ~/PDMD $ tar xvfz dscribe.tar.gz
+```
+```shell
+(venv) ~/PDMD $ cd dscribe
+```
+```shell
+(venv) ~/PDMD/dscribe $ pip install .
+```
+
+(3) Install packages `torch-scatter`, `torch-sparse`, `torch-cluster` and `torch-geometric` manually corresponding to your operating systems and GPU version.
 
 CPU Example:
 ```shell
