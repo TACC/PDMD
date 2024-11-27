@@ -22,7 +22,9 @@ class ChemGNN_Calculator(Calculator):
   #load energy .pt model
   self.energy_model = ChemGNN_EnergyModel()
   self.energy_model = self.energy_model.to(dtype=torch.float32)
-  checkpoint_energy = torch.load(self.energy_pth_filename, map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+  checkpoint_energy = torch.load(self.energy_pth_filename,
+                                 map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                                 weights_only=False)
   energy_model_state_dict = checkpoint_energy["model_state_dict"]
   self.energy_model.load_state_dict(energy_model_state_dict)
 
@@ -30,7 +32,8 @@ class ChemGNN_Calculator(Calculator):
   self.forces_model = ChemGNN_ForcesModel()
   self.forces_model = self.forces_model.to(dtype=torch.float32)
   checkpoint_forces = torch.load(self.forces_pth_filename,
-                                 map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+                                 map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                                 weights_only=False)
   forces_model_state_dict = checkpoint_forces["model_state_dict"]
   self.forces_model.load_state_dict(forces_model_state_dict)
 

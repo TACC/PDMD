@@ -4,10 +4,10 @@ CONFIGS = {
     'data_config': {
         'main_path': './',
         'dataset': 'FORCES_DATASET',
-        'model': 'ChemGNN_force',
+        'model': 'ChemGNN_forces',
     },
     'training_config': {
-        'device_type': 'cpu',
+        'device_type': 'gpu',
         'loss_fn_id': 1,
         'epoch': 2000,
         'epoch_step': 1,

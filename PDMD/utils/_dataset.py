@@ -11,7 +11,7 @@ class MutilWaterDataset(InMemoryDataset):
     def __init__(self, root, split='1water_energy', transform=None, pre_transform=None, pre_filter=None):
         super().__init__(root, transform, pre_transform, pre_filter)
         path = osp.join(self.processed_dir, f'{split}.pt')
-        self.data, self.slices = torch.load(path)
+        self.data, self.slices = torch.load(path,weights_only=False)
 
     @property
     def raw_file_names(self):

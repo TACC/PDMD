@@ -9,7 +9,6 @@ import numpy as np
 import torch
 import random
 import json
-import warnings
 from ..models import ENERGY_Model, FORCE_Model
 from . import get_timestring, MutilWaterDataset, split_dataset, worker_init_fn, train, val, draw_two_dimension, reverse_min_max_scaler_1d
 
@@ -18,7 +17,6 @@ from . import get_timestring, MutilWaterDataset, split_dataset, worker_init_fn, 
 # os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
 # torch.set_default_dtype(torch.float64)
-warnings.filterwarnings("ignore", category=UserWarning, message="TypedStorage is deprecated")
 
 def run(config):
     np.random.seed(config.seed)
@@ -111,11 +109,11 @@ def run(config):
     print("regression_result_test_true: {}".format(regression_result_test_true))
     print("regression_result_test_pred: {}".format(regression_result_test_pred))
 
-    assert config.model in ["ChemGNN_energy", "ChemGNN_force"]
+    assert config.model in ["ChemGNN_energy", "ChemGNN_forces"]
     model = None
     if config.model == 'ChemGNN_energy':
         model = ENERGY_Model().to(config.device)
-    elif config.model == 'ChemGNN_force':
+    elif config.model == 'ChemGNN_forces':
         model = FORCE_Model().to(config.device)
 
     if os.path.exists(model_restart_path):
@@ -131,7 +129,7 @@ def run(config):
     if config.model == 'ChemGNN_energy':
         optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
         scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=30, min_lr=0.000001)
-    elif config.model == 'ChemGNN_force':
+    elif config.model == 'ChemGNN_forces':
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
         scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=50, min_lr=0.0000001)
     print(model)
