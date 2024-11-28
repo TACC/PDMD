@@ -84,7 +84,7 @@ This project is developed using Python 3.9 and is compatible with macOS, Linux, 
 
 (3) Create a new virtual environment and activate it. In this case we use Virtualenv environment (Here we assume you have installed virtualenv using you source python script), you can use other virtual environments instead (like conda). This part shows how to set it on your macOS or Linux operating system.
 ```shell
-~/PDMD $ python -m venv ./venv/
+~/PDMD $ python3 -m venv ./venv/
 ~/PDMD $ source venv/bin/activate
 (venv) ~/PDMD $ 
 ```
@@ -109,13 +109,14 @@ pip3 install --pre torch torchvision torchaudio --index-url https://download.pyt
 
 (2) Install other prerequisite packages.
 ```shell
-(venv) ~/PDMD $ pip install -r requriements.txt
+(venv) ~/PDMD $ pip3 install -r requriements.txt
 ```
 
 ## 2.3 Prepare Datasets
 The energy and force dataset required for running model training can be downloaded via the link below:
 ```shell
 (venv) ~/PDMD $ wget https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/PDMD_DATASET.tar.gz
+(venv) ~/PDMD $ tar xvfz PDMD_DATASET.tar.gz
 ```
 The download will take approximately several tens of minutes, and produce a compressed file of about 66GB. After extracting the file, you will obtain a folder named `PDMD_DATASET`. Please place this folder into the project directory to match the structure shown in **1. Structure of the Repository**.
 
@@ -174,14 +175,14 @@ At this step, you have the flexibility to make adjustments to the dataset and mo
 
 (1) Run Testing. Note that we saved the trained energy and force models in test/energy.pt and test/forces.pt. Feel free to testing them.
 ```shell
-(venv) ~/PDMD $ python run.py --benchmark
+(venv) ~/PDMD $ python3 run.py --benchmark
 ```
 
 If you want to test your retrained model, please move the trained energy model to the `PDMD/test/` directory and rename it to `energy.pt`, and move the trained force model to the same directory and rename it to `forces.pt`, replacing the existing model files.
 
 (2) Calculate MAE.
 ```shell
-(venv) ~/PDMD $ python run.py --mae
+(venv) ~/PDMD $ python3 run.py --mae
 ```
 
 ## 2.6 Run Training
