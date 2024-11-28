@@ -36,6 +36,7 @@ PDMD
 ├── PDMD_DATASET/
 ├────── ENERGY_DATASET/
 ├────── FORCES_DATASET/
+├── dscribe
 ├── logs
 ├── saves
 ├── images
@@ -51,6 +52,7 @@ PDMD
 - `PDMD/test/`: folder contains the test and MD scripts
 - `PDMD_DATASET/ENERGY_DATASET/`: folder contains the processed data for the energy model
 - `PDMD_DATASET/FORCES_DATASET/`: folder contains the processed data for the force model
+- `dscribe/`: folder contains the revised dscribe==2.0.1 package
 - `logs/`: folder contains the files for logs
 - `saves/`: folder contains saved models and training record figures
 - `images/`: folder contains some important figures
