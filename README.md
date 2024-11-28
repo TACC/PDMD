@@ -147,10 +147,10 @@ CONFIGS = {
     'data_config': {
         'main_path': './',
         'dataset': 'FORCES_DATASET',
-        'model': 'ChemGNN_force',
+        'model': 'ChemGNN_forces',
     },
     'training_config': {
-        'device_type': 'cpu',
+        'device_type': 'gpu',
         'loss_fn_id': 1,
         'epoch': 2000,
         'epoch_step': 1,
@@ -168,7 +168,7 @@ config = get_config(CONFIGS)
 At this step, you have the flexibility to make adjustments to the dataset and model type. You need to choose whether to train the energy model or the force model. 
 
 - If `'dataset': 'ENERGY_DATASET'` and `'model': 'ChemGNN_energy'`, it indicates that the energy dataset is loaded and the energy model is trained.
-- If `'dataset': 'FORCES_DATASET'` and `'model': 'ChemGNN_force'`, it indicates that the force dataset is loaded and the force model is trained.
+- If `'dataset': 'FORCES_DATASET'` and `'model': 'ChemGNN_forces'`, it indicates that the force dataset is loaded and the force model is trained.
 
 ## 2.5 Run Testing
 
@@ -217,7 +217,7 @@ None
 
 # 5. Questions
 
-If you have any questions, please contact .
+If you have any questions, please contact Dr. Hanning Chen via hchen@tacc.utexas.edu.
 
 
 
