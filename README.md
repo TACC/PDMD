@@ -199,7 +199,7 @@ The table below show the training hyperparameters used in our experiments
 (2) Run Training. Note that if you have downloaded our data sets and saved them in the corresponding path, you do not need to process them anymore.
 
 ```shell
-(venv) ~/PDMD $ python run.py --train
+(venv) ~/PDMD $ python3 run.py --train
 ```
 
 (3) Collect the auto-generated training results in `saves/`.
