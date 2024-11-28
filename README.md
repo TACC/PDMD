@@ -93,39 +93,23 @@ You can use the command deactivate to exit the virtual environment at any time.
 
 ## 2.2 Install Packages
 
-(1) Install main dependent packages.
+(1) Install the Pytorch package manually corresponding to your operating systems and CUDA version if NVIDIA GPUs are available.
+
+For example, on TACC's Vista cluster, the installation of CUDA-enabled Pytorch can be accomplished by the following commands: 
+
+```shell
+module purge
+module reset
+module load gcc/14.2.0
+module load cuda/12.5
+module load nccl/2.19.3
+module load python3/3.11.8
+pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu124
+```
+
+(2) Install other prerequisite packages.
 ```shell
 (venv) ~/PDMD $ pip install -r requriements.txt
-```
-
-(2) Install homemade `dscribe` following the procedure below:
-```shell
-(venv) ~/PDMD $ wget https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/dscribe.tar.gz
-```
-```shell
-(venv) ~/PDMD $ tar xvfz dscribe.tar.gz
-```
-```shell
-(venv) ~/PDMD $ cd dscribe
-```
-```shell
-(venv) ~/PDMD/dscribe $ pip install .
-```
-
-(3) Install packages `torch-scatter`, `torch-sparse`, `torch-cluster` and `torch-geometric` manually corresponding to your operating systems and GPU version.
-
-CPU Example:
-```shell
-(venv) ~/PDMD $ pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-2.0.0+cpu.html
-(venv) ~/PDMD $ pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-2.0.0+cpu.html
-(venv) ~/PDMD $ pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-2.0.0+cpu.html
-```
-
-CUDA Example (If you are not using CUDA 11.8, please modify the suffix part "cuXXX" of each following url to match your CUDA version):
-```shell
-(venv) ~/PDMD $ pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-2.0.0+cu118.html
-(venv) ~/PDMD $ pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-2.0.0+cu118.html
-(venv) ~/PDMD $ pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-2.0.0+cu118.html
 ```
 
 ## 2.3 Prepare Datasets
