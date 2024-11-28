@@ -109,7 +109,7 @@ pip3 install --pre torch torchvision torchaudio --index-url https://download.pyt
 
 (2) Install other prerequisite packages.
 ```shell
-(venv) ~/PDMD $ pip3 install -r requriements.txt
+(venv) ~/PDMD $ pip3 install -r requirements.txt
 ```
 
 ## 2.3 Prepare Datasets
