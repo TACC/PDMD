@@ -98,13 +98,13 @@ You can use the command deactivate to exit the virtual environment at any time.
 For example, on TACC's Vista cluster, the installation of CUDA-enabled Pytorch can be accomplished by the following commands: 
 
 ```shell
-module purge
-module reset
-module load gcc/14.2.0
-module load cuda/12.5
-module load nccl/2.19.3
-module load python3/3.11.8
-pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu124
+(venv) ~/PDMD $ module purge
+(venv) ~/PDMD $ module reset
+(venv) ~/PDMD $ module load gcc/14.2.0
+(venv) ~/PDMD $ module load cuda/12.5
+(venv) ~/PDMD $ module load nccl/2.19.3
+(venv) ~/PDMD $ module load python3/3.11.8
+(venv) ~/PDMD $ pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu124
 ```
 
 (2) Install other prerequisite packages.
