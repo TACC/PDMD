@@ -1,4 +1,4 @@
-PDMD: Potential-Free Data-driven Molecular Dynamics
+PDMD: Potential-free Data-driven Molecular Dynamics
 ===
 
 # Overview
