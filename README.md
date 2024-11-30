@@ -1,4 +1,4 @@
-PDMD: Potential-free Data-driven Molecular Dynamics (Version 1.0, released on November 29th, 2024)
+PDMD: Potential-free Data-driven Molecular Dynamics (Version 1.1, development version)
 ===
 
 # Overview
