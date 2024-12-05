@@ -1,6 +1,9 @@
 torch >= 2.0.0
 torchvision 
 torchaudio
+mpi4py
+lightning
+lightning[extra]
 torch-geometric >= 2.2.0
 ase
 matplotlib

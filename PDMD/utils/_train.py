@@ -2,7 +2,7 @@ import torch
 
 def train(model, args, train_loader, optimizer, epoch=None):
     model_name = model.model_name
-    assert model_name in ["ChemGNN_energy", "ChemGNN_force"]
+    assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
     model.train()
     total_loss = 0
     gradients_list = []
@@ -33,7 +33,7 @@ def train(model, args, train_loader, optimizer, epoch=None):
                     break
             optimizer.step()
         loss = total_loss / len(train_loader.dataset)
-    if model_name == "ChemGNN_force":
+    if model_name == "ChemGNN_forces":
         for batch_i, data in enumerate(train_loader):
             data = data.to(args.device)
             optimizer.zero_grad()

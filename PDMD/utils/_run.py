@@ -8,6 +8,7 @@ import os
 import warnings
 import numpy as np
 import torch
+import lightning
 import random
 import json
 from ..models import ENERGY_Model, FORCE_Model
@@ -18,6 +19,170 @@ from . import get_timestring, MutilWaterDataset, split_dataset, worker_init_fn, 
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
 # torch.set_default_dtype(torch.float64)
 warnings.filterwarnings('ignore', category=UserWarning, message='TypedStorage is deprecated')
+
+# define a LightningModule named ChemLightning 
+class ChemLightning(lightning.LightningModule):
+    # initialiation of a ChemLightning object: 
+    # chemmodel, config, factor, patience and min_lr can be accessed as hyperparameters
+    # for example, self.hparams.factor
+    def __init__(self, chemmodel, config, model_save_path, factor=0.6, patience=30, min_lr=1.0e-6):
+        super().__init__()
+        #initiate the Chemistry model
+        self.chemmodel = chemmodel 
+        #initiate the model's hyperparameters 
+        if config.model == 'ChemGNN_energy':
+         factor=0.6
+         patience=30
+         min_lr=1.0e-6
+        if config.model == 'ChemGNN_forces':
+         factor=0.6
+         patience=50
+         min_lr=1.0e-7
+        #save the model's hyperparameters
+        self.save_hyperparameters(ignore=['chemmodel'])
+        #disable automatic optimization by LightingModule, alternatively, use your own optimizer and scheduler
+        self.automatic_optimization = False
+
+    # initiate the optimizer and scheduler, called only once during class object initiazation
+    def configure_optimizers(self):
+        #setup optimizer
+        if self.hparams.config.model == 'ChemGNN_energy':
+         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.config.lr)
+        if self.hparams.config.model == 'ChemGNN_forces':
+         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.config.lr)
+        #setup scheduler 
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=self.hparams.factor, patience=self.hparams.patience, min_lr=self.hparams.min_lr)
+        return {"optimizer":optimizer,"lr_scheduler":scheduler}
+
+    # for each step of model training
+    # note that only one record is avaiable in the input parameter "batch", i.e., batch_size = 1
+    # no need to iterate over train_loader
+    def training_step(self, batch, batch_idx):
+        model = self.chemmodel
+        config = self.hparams.config
+        optimizer = self.optimizers().optimizer
+        train_loader = self.trainer.train_dataloader
+        model_name = model.model_name
+        assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
+        model.train()
+        total_loss = 0
+        gradients_list = []
+        if model_name == "ChemGNN_energy":
+            optimizer.zero_grad()
+            input_dict = dict({
+                "x": batch.x,
+               "edge_index": batch.edge_index,
+                "edge_attr": batch.edge_attr,
+                "batch": batch.batch
+            })
+            out = model(input_dict)
+
+            mybatch = input_dict["batch"]
+            node_counts = torch.bincount(mybatch)
+
+            train_loss = (((out.squeeze() - batch.y) / node_counts).abs()).mean()
+            train_loss.backward()
+            total_loss += train_loss.item() * batch.num_graphs
+            
+            for name, parameter in model.named_parameters():
+                if parameter.requires_grad and name == 'energy_predictor.4.weight':
+                    gradients = torch.norm(parameter.grad, p=2)
+                    gradients = gradients.item()
+                    gradients_list.append(gradients)
+                    break
+            optimizer.step()
+            train_loss = total_loss / len(train_loader.dataset)  
+        if model_name == "ChemGNN_forces": 
+            optimizer.zero_grad()
+            input_dict = dict({
+                "x": batch.x,
+                "edge_index": batch.edge_index,
+                "edge_attr": batch.edge_attr,
+                "batch": batch.batch
+            })
+            out = model(input_dict)
+
+            train_loss = (out.squeeze() - batch.z).abs().mean()
+            train_loss.backward()
+            total_loss += train_loss.item() * batch.num_nodes
+
+            for name, parameter in model.named_parameters():
+                if parameter.requires_grad and name == 'force_predictor.2.weight':
+                    gradients = torch.norm(parameter.grad, p=2)
+                    gradients = gradients.item()
+                    gradients_list.append(gradients)
+                    break
+            optimizer.step()
+            train_loss = total_loss /sum([batch.num_nodes for batch in train_loader.dataset])
+
+        train_loss = torch.tensor(train_loss).to(config.device)
+        self.log("train_loss", train_loss, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
+        return train_loss 
+
+    # for each step of model validation
+    # note that only one record is avaiable in the input parameter "batch", i.e., batch_size = 1
+    # no need to iterate over val_loader
+    @torch.no_grad()
+    def validation_step(self, batch, batch_idx):
+       model = self.chemmodel
+       config = self.hparams.config
+       val_loader = self.trainer.val_dataloaders
+       # need to rewrite using your val() function as template
+       # val_loss = val(model, config, val_loader)
+       model_name = model.model_name
+       assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
+       model.eval()
+       total_error = 0
+       if model_name == "ChemGNN_energy":
+               batch = batch.to(config.device)
+               input_dict = dict({
+                "x": batch.x,
+                "edge_index": batch.edge_index,
+                "edge_attr": batch.edge_attr,
+                "batch": batch.batch
+               })
+               out = model(input_dict)
+               mybatch = input_dict["batch"]
+               node_counts = torch.bincount(mybatch)
+
+               val_loss = (((out.squeeze() - batch.y) / node_counts).abs()).mean()
+               total_error += val_loss.item() * batch.num_graphs
+               val_loss = total_error / len(val_loader.dataset)
+       if model_name == "ChemGNN_forces":
+               batch = batch.to(config.device)
+               input_dict = dict({
+                "x": batch.x,
+                "edge_index": batch.edge_index,
+                "edge_attr": batch.edge_attr,
+                "batch": batch.batch
+               })
+               out = model(input_dict)
+               total_error += (out.squeeze() - batch.z).abs().mean().item() * batch.num_nodes
+               val_loss = total_error / sum([batch.num_nodes for data in val_loader.dataset])
+
+       self.log("val_loss", val_loss, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
+       return val_loss
+
+    # activated after each epoch
+    def on_train_epoch_end(self):
+        #receive "train_loss" of the current epoch
+        train_loss = self.trainer.callback_metrics.get('train_loss',None)
+        #receive "validation_loss" of the current epoch
+        val_loss = self.trainer.callback_metrics.get('val_loss',None)
+        scheduler = self.lr_schedulers()
+        scheduler.step(val_loss)
+        #display train_loss and val_loss on the head node
+        if (torch.distributed.get_rank() == 0 and self.current_epoch % self.hparams.config.epoch_step == 0 ):
+            print("\n\ntrain_loss: ",train_loss.item()," val_loss: ",val_loss.item(),"\n")
+            torch.save(
+            {
+                    "config": self.hparams.config,
+                    "epoch": self.current_epoch,
+                    "model_state_dict": self.chemmodel.state_dict(),
+                    "loss": train_loss
+            }, self.hparams.model_save_path)
+         #display the optimizer information
+         #print(self.optimizers().optimizer.state_dict)
 
 def run(config):
     np.random.seed(config.seed)
@@ -153,32 +318,40 @@ def run(config):
     lr_list = []
     gradients_list = []
 
-    for epoch in range(1, config.epoch + 1):
-        model, train_loss, gradients = train(model, config, train_loader, optimizer)
-        val_loss = val(model, config, val_loader)
-        scheduler.step(val_loss)
-        epoch_train_loss_list.append(train_loss)
-        epoch_val_loss_list.append(val_loss)
-        lr_list.append(optimizer.param_groups[0]["lr"])
-        gradients_list.append(gradients)
+    # get the number of SLURM nodes
+    nnodes = int(os.getenv("SLURM_NNODES"))
+    # initiatie a ChemLightning object named pdmdlightning for parallel training
+    pdmdlightning = ChemLightning(model,config,model_save_path)
+    # set up a trainer for pdmdlightning
+    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1,limit_train_batches=80,limit_val_batches=20, max_epochs=config.epoch)
+    trainer.fit(model=pdmdlightning, train_dataloaders=train_loader,val_dataloaders=val_loader)
 
-        if epoch % config.epoch_step == 0:
-            now_time = time.time()
-            test_log = "Epoch [{0:05d}/{1:05d}] Loss_train:{2:.6f} Loss_val:{3:.6f} Gradients:{4:.6f} Lr:{5:.6f} (Time:{6:.6f}s Time total:{7:.2f}min Time remain: {8:.2f}min)".format(
-                epoch, config.epoch, train_loss, val_loss, gradients, optimizer.param_groups[0]["lr"],
-                now_time - start_time, (now_time - start_time_0) / 60.0,
-                (now_time - start_time_0) / 60.0 / epoch * (config.epoch - epoch))
-            print(test_log)
-            with open(log_file_path, "a") as f:
-                f.write(test_log + "\n")
-            start_time = now_time
-            torch.save(
-                {
-                    "config": config,
-                    "epoch": epoch,
-                    "model_state_dict": model.state_dict(),
-                    "loss": train_loss
-                }, model_save_path)
+    #for epoch in range(1, config.epoch + 1):
+    #    model, train_loss, gradients = train(model, config, train_loader, optimizer)
+    #    val_loss = val(model, config, val_loader)
+    #    scheduler.step(val_loss)
+    #    epoch_train_loss_list.append(train_loss)
+    #    epoch_val_loss_list.append(val_loss)
+    #    lr_list.append(optimizer.param_groups[0]["lr"])
+    #    gradients_list.append(gradients)
+
+    #    if epoch % config.epoch_step == 0:
+    #        now_time = time.time()
+    #        test_log = "Epoch [{0:05d}/{1:05d}] Loss_train:{2:.6f} Loss_val:{3:.6f} Gradients:{4:.6f} Lr:{5:.6f} (Time:{6:.6f}s Time total:{7:.2f}min Time remain: {8:.2f}min)".format(
+    #            epoch, config.epoch, train_loss, val_loss, gradients, optimizer.param_groups[0]["lr"],
+    #            now_time - start_time, (now_time - start_time_0) / 60.0,
+    #            (now_time - start_time_0) / 60.0 / epoch * (config.epoch - epoch))
+    #        print(test_log)
+    #        with open(log_file_path, "a") as f:
+    #            f.write(test_log + "\n")
+    #        start_time = now_time
+    #        torch.save(
+    #            {
+    #                "config": config,
+    #                "epoch": epoch,
+    #                "model_state_dict": model.state_dict(),
+    #                "loss": train_loss
+    #            }, model_save_path)
 
     # Draw loss
     print("[Step 5] Drawing training result...")

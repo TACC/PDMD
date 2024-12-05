@@ -182,7 +182,7 @@ class CEALConv(MessagePassing):
 class FORCE_Model(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.model_name = "ChemGNN_force"
+        self.model_name = "ChemGNN_forces"
         self.edge_emb = Embedding(20, 10)
         self.conv_num = 2
         self.in_num = 722
