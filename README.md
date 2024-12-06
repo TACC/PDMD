@@ -214,7 +214,7 @@ test_true.npy
 The mean absolute errors (MAEs) of PDMD for (a) system energy, and (b) atomic force, across all (H<sub>2</sub>O)<sub>1&le;n&le;21</sub> clusters.
 
 # 4. Citation
-If you use the PDMD code and/or its dataset, please cite our paper titled "PDMD: Potential-free Data-driven Molecular Dynamics for Variable-sized Water Clusters" [https://arxiv.org/abs/2412.04442](https://doi.org/10.48550/arXiv.2412.04442)
+If you use the PDMD code and/or its dataset, please cite our paper titled "PDMD: Potential-free Data-driven Molecular Dynamics for Variable-sized Water Clusters" [https://doi.org/10.48550/arXiv.2412.04442](https://doi.org/10.48550/arXiv.2412.04442)
 
 # 5. Questions
 
