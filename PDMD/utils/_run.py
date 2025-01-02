@@ -82,6 +82,7 @@ class ChemLightning(lightning.LightningModule):
             train_loss = (((out.squeeze() - batch.y) / node_counts).abs()).mean()
             train_loss.backward()
             total_loss += train_loss.item() * batch.num_graphs
+            total_count = batch.num_graphs
             
             for name, parameter in model.named_parameters():
                 if parameter.requires_grad and name == 'energy_predictor.4.weight':
@@ -90,7 +91,6 @@ class ChemLightning(lightning.LightningModule):
                     gradients_list.append(gradients)
                     break
             optimizer.step()
-            train_loss = total_loss / len(train_loader.dataset)  
         if model_name == "ChemGNN_forces": 
             optimizer.zero_grad()
             input_dict = dict({
@@ -131,7 +131,6 @@ class ChemLightning(lightning.LightningModule):
        model_name = model.model_name
        assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
        model.eval()
-       total_error = 0
        if model_name == "ChemGNN_energy":
                batch = batch.to(config.device)
                input_dict = dict({
@@ -145,8 +144,9 @@ class ChemLightning(lightning.LightningModule):
                node_counts = torch.bincount(mybatch)
 
                val_loss = (((out.squeeze() - batch.y) / node_counts).abs()).mean()
-               total_error += val_loss.item() * batch.num_graphs
-               val_loss = total_error / len(val_loader.dataset)
+               total_error = val_loss.item() * batch.num_graphs
+               total_count = batch.num_graphs
+           
        if model_name == "ChemGNN_forces":
                batch = batch.to(config.device)
                input_dict = dict({
