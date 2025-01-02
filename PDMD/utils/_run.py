@@ -65,7 +65,6 @@ class ChemLightning(lightning.LightningModule):
         model_name = model.model_name
         assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
         model.train()
-        total_loss = 0
         gradients_list = []
         if model_name == "ChemGNN_energy":
             optimizer.zero_grad()
@@ -104,7 +103,8 @@ class ChemLightning(lightning.LightningModule):
 
             train_loss = (out.squeeze() - batch.z).abs().mean()
             train_loss.backward()
-            total_loss += train_loss.item() * batch.num_nodes
+            total_loss = train_loss.item() * batch.num_nodes
+            total_count = batch.num_nodes
 
             for name, parameter in model.named_parameters():
                 if parameter.requires_grad and name == 'force_predictor.2.weight':
@@ -113,11 +113,10 @@ class ChemLightning(lightning.LightningModule):
                     gradients_list.append(gradients)
                     break
             optimizer.step()
-            train_loss = total_loss /sum([batch.num_nodes for batch in train_loader.dataset])
 
-        train_loss = torch.tensor(train_loss).to(config.device)
-        self.log("train_loss", train_loss, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
-        return train_loss 
+        self.log("train_loss", total_loss, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("train_count", total_count, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
+        return {"train_loss": total_loss, "count": total_count}
 
     # for each step of model validation
     # note that only one record is avaiable in the input parameter "batch", i.e., batch_size = 1
@@ -158,17 +157,24 @@ class ChemLightning(lightning.LightningModule):
                })
                out = model(input_dict)
                total_error += (out.squeeze() - batch.z).abs().mean().item() * batch.num_nodes
-               val_loss = total_error / sum([batch.num_nodes for data in val_loader.dataset])
+               total_count += batch.num_nodes
 
-       self.log("val_loss", val_loss, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
-       return val_loss
+       self.log("val_count", total_count, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
+       self.log("val_loss", total_error, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
+       return {"val_loss": total_error, "count": total_count}
 
     # activated after each epoch
     def on_train_epoch_end(self):
-        #receive "train_loss" of the current epoch
+        #receive "train_loss" and "train_count" of the current epoch
         train_loss = self.trainer.callback_metrics.get('train_loss',None)
-        #receive "validation_loss" of the current epoch
+        train_count = self.trainer.callback_metrics.get('train_count', None)
+        #receive "validation_loss" and "validation_count" of the current epoch
         val_loss = self.trainer.callback_metrics.get('val_loss',None)
+        val_count = self.trainer.callback_metrics.get('val_count', None)
+
+        train_loss = train_loss / train_count
+        val_loss = val_loss / val_count
+        
         scheduler = self.lr_schedulers()
         scheduler.step(val_loss)
         #display train_loss and val_loss on the head node
