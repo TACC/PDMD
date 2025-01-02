@@ -156,8 +156,9 @@ class ChemLightning(lightning.LightningModule):
                 "batch": batch.batch
                })
                out = model(input_dict)
-               total_error += (out.squeeze() - batch.z).abs().mean().item() * batch.num_nodes
-               total_count += batch.num_nodes
+               val_loss = (out.squeeze() - batch.z).abs().mean()
+               total_error = val_loss.item() * batch.num_nodes
+               total_count = batch.num_nodes
 
        self.log("val_count", total_count, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
        self.log("val_loss", total_error, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
