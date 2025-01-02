@@ -64,7 +64,6 @@ class ChemLightning(lightning.LightningModule):
         train_loader = self.trainer.train_dataloader
         model_name = model.model_name
         assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
-        model.train()
         gradients_list = []
         if model_name == "ChemGNN_energy":
             optimizer.zero_grad()
@@ -130,9 +129,7 @@ class ChemLightning(lightning.LightningModule):
        # val_loss = val(model, config, val_loader)
        model_name = model.model_name
        assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
-       model.eval()
        if model_name == "ChemGNN_energy":
-               batch = batch.to(config.device)
                input_dict = dict({
                 "x": batch.x,
                 "edge_index": batch.edge_index,
@@ -148,7 +145,6 @@ class ChemLightning(lightning.LightningModule):
                total_count = batch.num_graphs
            
        if model_name == "ChemGNN_forces":
-               batch = batch.to(config.device)
                input_dict = dict({
                 "x": batch.x,
                 "edge_index": batch.edge_index,
@@ -299,12 +295,12 @@ def run(config):
         initial_state_dict = model.state_dict()
         torch.save(initial_state_dict, initial_model_state_path)
 
-    if config.model == 'ChemGNN_energy':
-        optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=30, min_lr=0.000001)
-    elif config.model == 'ChemGNN_forces':
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=50, min_lr=0.0000001)
+    # if config.model == 'ChemGNN_energy':
+    #     optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
+    #     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=30, min_lr=0.000001)
+    # elif config.model == 'ChemGNN_forces':
+    #     optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
+    #     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=50, min_lr=0.0000001)
     print(model)
 
     print("[Step 4] Training...")
@@ -361,89 +357,89 @@ def run(config):
     #            }, model_save_path)
 
     # Draw loss
-    print("[Step 5] Drawing training result...")
-    loss_length = len(epoch_train_loss_list)
-    loss_x = range(1, config.epoch + 1)
+    # print("[Step 5] Drawing training result...")
+    # loss_length = len(epoch_train_loss_list)
+    # loss_x = range(1, config.epoch + 1)
 
-    # draw gradients
-    draw_two_dimension(
-        y_lists=[gradients_list],
-        x_list=loss_x,
-        color_list=["blue"],
-        legend_list=["loss: last={0:.6f}, min={1:.6f}".format(gradients_list[-1], min(gradients_list))],
-        line_style_list=["solid"],
-        fig_title="Gradients",
-        fig_x_label="Epoch",
-        fig_y_label="Gradients",
-        fig_size=(8, 6),
-        show_flag=False,
-        save_flag=True,
-        save_path=figure_save_path_gradients
-    )
+    # # draw gradients
+    # draw_two_dimension(
+    #     y_lists=[gradients_list],
+    #     x_list=loss_x,
+    #     color_list=["blue"],
+    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(gradients_list[-1], min(gradients_list))],
+    #     line_style_list=["solid"],
+    #     fig_title="Gradients",
+    #     fig_x_label="Epoch",
+    #     fig_y_label="Gradients",
+    #     fig_size=(8, 6),
+    #     show_flag=False,
+    #     save_flag=True,
+    #     save_path=figure_save_path_gradients
+    # )
 
-    # draw learning rate
-    draw_two_dimension(
-        y_lists=[lr_list],
-        x_list=loss_x,
-        color_list=["blue"],
-        legend_list=["loss: last={0:.6f}, min={1:.6f}".format(lr_list[-1], min(lr_list))],
-        line_style_list=["solid"],
-        fig_title="Learning rate",
-        fig_x_label="Epoch",
-        fig_y_label="Lr",
-        fig_size=(8, 6),
-        show_flag=False,
-        save_flag=True,
-        save_path=figure_save_path_lr
-    )
+    # # draw learning rate
+    # draw_two_dimension(
+    #     y_lists=[lr_list],
+    #     x_list=loss_x,
+    #     color_list=["blue"],
+    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(lr_list[-1], min(lr_list))],
+    #     line_style_list=["solid"],
+    #     fig_title="Learning rate",
+    #     fig_x_label="Epoch",
+    #     fig_y_label="Lr",
+    #     fig_size=(8, 6),
+    #     show_flag=False,
+    #     save_flag=True,
+    #     save_path=figure_save_path_lr
+    # )
 
-    # draw train and validation loss
-    draw_two_dimension(
-        y_lists=[epoch_train_loss_list, epoch_val_loss_list],
-        x_list=loss_x,
-        color_list=["blue", "red"],  # You can specify colors for each curve
-        legend_list=["Train Loss", "Validation Loss"],  # Add legends for each curve
-        line_style_list=["solid", "dashed"],  # You can specify line styles
-        fig_title="Train and Validation loss",
-        fig_x_label="Epoch",
-        fig_y_label="Loss",
-        fig_size=(8, 6),
-        show_flag=False,
-        save_flag=True,
-        save_path=figure_save_path_combined  # Save the combined plot
-    )
+    # # draw train and validation loss
+    # draw_two_dimension(
+    #     y_lists=[epoch_train_loss_list, epoch_val_loss_list],
+    #     x_list=loss_x,
+    #     color_list=["blue", "red"],  # You can specify colors for each curve
+    #     legend_list=["Train Loss", "Validation Loss"],  # Add legends for each curve
+    #     line_style_list=["solid", "dashed"],  # You can specify line styles
+    #     fig_title="Train and Validation loss",
+    #     fig_x_label="Epoch",
+    #     fig_y_label="Loss",
+    #     fig_size=(8, 6),
+    #     show_flag=False,
+    #     save_flag=True,
+    #     save_path=figure_save_path_combined  # Save the combined plot
+    # )
 
-    # draw train loss_whole
-    draw_two_dimension(
-        y_lists=[epoch_train_loss_list],
-        x_list=loss_x,
-        color_list=["blue"],
-        legend_list=["loss: last={0:.6f}, min={1:.6f}".format(epoch_train_loss_list[-1], min(epoch_train_loss_list))],
-        line_style_list=["solid"],
-        fig_title="Train loss - whole",
-        fig_x_label="Epoch",
-        fig_y_label="Loss",
-        fig_size=(8, 6),
-        show_flag=False,
-        save_flag=True,
-        save_path=figure_save_path_train_loss_whole
-    )
+    # # draw train loss_whole
+    # draw_two_dimension(
+    #     y_lists=[epoch_train_loss_list],
+    #     x_list=loss_x,
+    #     color_list=["blue"],
+    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(epoch_train_loss_list[-1], min(epoch_train_loss_list))],
+    #     line_style_list=["solid"],
+    #     fig_title="Train loss - whole",
+    #     fig_x_label="Epoch",
+    #     fig_y_label="Loss",
+    #     fig_size=(8, 6),
+    #     show_flag=False,
+    #     save_flag=True,
+    #     save_path=figure_save_path_train_loss_whole
+    # )
 
-    # draw train loss_last_half
-    draw_two_dimension(
-        y_lists=[epoch_train_loss_list[-(loss_length // 2):]],
-        x_list=loss_x[-(loss_length // 2):],
-        color_list=["blue"],
-        legend_list=["loss: last={0:.6f}, min={1:.6f}".format(epoch_train_loss_list[-1], min(epoch_train_loss_list))],
-        line_style_list=["solid"],
-        fig_title="Loss - last half ({} - Loss{})".format(config.dataset, config.loss_fn_id),
-        fig_x_label="Epoch",
-        fig_y_label="Loss",
-        fig_size=(8, 6),
-        show_flag=False,
-        save_flag=True,
-        save_path=figure_save_path_train_loss_last_half
-    )
+    # # draw train loss_last_half
+    # draw_two_dimension(
+    #     y_lists=[epoch_train_loss_list[-(loss_length // 2):]],
+    #     x_list=loss_x[-(loss_length // 2):],
+    #     color_list=["blue"],
+    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(epoch_train_loss_list[-1], min(epoch_train_loss_list))],
+    #     line_style_list=["solid"],
+    #     fig_title="Loss - last half ({} - Loss{})".format(config.dataset, config.loss_fn_id),
+    #     fig_x_label="Epoch",
+    #     fig_y_label="Loss",
+    #     fig_size=(8, 6),
+    #     show_flag=False,
+    #     save_flag=True,
+    #     save_path=figure_save_path_train_loss_last_half
+    # )
 
     print("[Step 6] Saving final model...")
 
