@@ -116,7 +116,7 @@ class ChemLightning(lightning.LightningModule):
 
         self.log("train_loss", total_loss, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
         self.log("train_count", total_count, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
-        return {"train_loss": total_loss, "count": total_count}
+        return train_loss
 
     # for each step of model validation
     # note that only one record is avaiable in the input parameter "batch", i.e., batch_size = 1
@@ -161,7 +161,7 @@ class ChemLightning(lightning.LightningModule):
 
        self.log("val_count", total_count, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
        self.log("val_loss", total_error, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
-       return {"val_loss": total_error, "count": total_count}
+       return val_loss
 
     # activated after each epoch
     def on_train_epoch_end(self):
