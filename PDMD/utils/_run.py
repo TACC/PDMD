@@ -160,6 +160,10 @@ class ChemLightning(lightning.LightningModule):
        self.log("val_loss", total_error, batch_size=config.batch_size, on_step=False, on_epoch=True, sync_dist=True)
        return val_loss
 
+    # activated before each epoch
+    def on_train_epoch_start(self):
+        self.epoch_start_time = time.time()
+    
     # activated after each epoch
     def on_train_epoch_end(self):
         #receive "train_loss" and "train_count" of the current epoch
@@ -171,12 +175,16 @@ class ChemLightning(lightning.LightningModule):
 
         train_loss = train_loss / train_count
         val_loss = val_loss / val_count
+
+        #epoch timer
+        self.epoch_end_time = time.time()
+        epoch_time = self.epoch_end_time - self.epoch_start_time
         
         scheduler = self.lr_schedulers()
         scheduler.step(val_loss)
         #display train_loss and val_loss on the head node
         if (torch.distributed.get_rank() == 0 and self.current_epoch % self.hparams.config.epoch_step == 0 ):
-            print("\n\ntrain_loss: ",train_loss.item()," val_loss: ",val_loss.item(),"\n")
+            print("\n\ntrain_loss: ",train_loss.item()," val_loss: ",val_loss.item()," elapsed_time: ",epoch_time,"\n")
             torch.save(
             {
                     "config": self.hparams.config,
