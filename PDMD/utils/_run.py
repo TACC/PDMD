@@ -326,7 +326,7 @@ def run(config):
     # initiatie a ChemLightning object named pdmdlightning for parallel training
     pdmdlightning = ChemLightning(model,config,model_save_path)
     # set up a trainer for pdmdlightning
-    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1,limit_train_batches=80,limit_val_batches=20, max_epochs=config.epoch)
+    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1, max_epochs=config.epoch)
     trainer.fit(model=pdmdlightning, train_dataloaders=train_loader,val_dataloaders=val_loader)
 
     #for epoch in range(1, config.epoch + 1):
