@@ -55,18 +55,18 @@ class ChemGNN_EnergyModel(torch.nn.Module):
         self.pre_mlp = self.pre_mlp.to(device)
         self.energy_predictor = self.energy_predictor.to(device)
 
-        agg_weights = torch.nn.functional.softmax(self.weights, dim=0)
         edge_attr = self.edge_emb(edge_attr)
         # x = x.to(torch.float64)
         x = self.pre_mlp(x)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
-            x = F.relu(batch_norm(conv(x, edge_index, agg_weights, edge_attr)))
+            x = F.relu(batch_norm(conv(x, edge_index, self.weights, edge_attr)))
 
         x_energy = global_add_pool(x, batch)
         x_energy = self.energy_predictor(x_energy)
 
         energy = x_energy.cpu().detach().numpy()[0]
-        energy = reverse_min_max_scaler(energy)
+        energy = molecular_energy(atomic_numbers, energy, atomic_energy_map)
+        #energy = reverse_min_max_scaler(energy)
         #energy = torch.tensor(energy)
         return energy
 
