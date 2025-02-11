@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn import ModuleList, ReLU, Sequential
 from torch_geometric.nn.dense.linear import Linear
-from PDMD.benchmark.utils import one_time_generate_forward_input_energy, reverse_min_max_scaler
+from PDMD.benchmark.utils import one_time_generate_forward_input_energy, reverse_min_max_scaler, molecular_energy, atomic_energy_map
 from PDMD.benchmark.ChemGNN import CEALConv
 
 
