@@ -39,6 +39,11 @@ element_map = {
     20: "Ca"
 }
 
+atomic_energy_map = {
+    1: -0.5799280498,
+    8: -15.9556439593
+}
+
 def generate_soap_force(number, pos):
     soap_fea = []
     element_array = [element_map[num] for num in number]
@@ -200,4 +205,12 @@ def reverse_min_max_scaler(data_normalized, data_min=-361.77515914, data_max=-17
     core = (data_normalized - new_min) / (new_max - new_min)
     data_original = core * (data_max - data_min) + data_min
     return data_original
+
+def molecular_energy(atomic_numbers, energy, atomic_energy_map):
+    for atom in atomic_numbers:
+        if atom in atomic_energy_map:
+            energy += atomic_energy_map[atom]
+        else:
+            print(f"Warning: Atomic number {atom} not found in the energy map!")
+    return energy
 
