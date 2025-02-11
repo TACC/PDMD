@@ -211,6 +211,6 @@ def molecular_energy(atomic_numbers, energy, atomic_energy_map):
         if atom in atomic_energy_map:
             energy += atomic_energy_map[atom]
         else:
-            print(f"Warning: Atomic number {atom} not found in the energy map!")
+            print(f"Warning: Atomic number {atom} not found in the atomic energy map!")
     return energy
 
