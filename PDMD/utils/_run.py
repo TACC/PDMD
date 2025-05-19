@@ -14,10 +14,6 @@ import json
 from ..models import ENERGY_Model, FORCE_Model
 from . import get_timestring, MutilWaterDataset, split_dataset, worker_init_fn, train, val, draw_two_dimension, reverse_min_max_scaler_1d
 
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# os.environ['CUDA_VISIBLE_DEVICES'] = "0"
-# os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
-# torch.set_default_dtype(torch.float64)
 warnings.filterwarnings('ignore', category=UserWarning, message='TypedStorage is deprecated')
 
 # define a LightningModule named ChemLightning 
@@ -247,7 +243,7 @@ def run(config):
     g = torch.Generator()
     g.manual_seed(config.seed)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2, worker_init_fn=worker_init_fn, generator=g)
-    val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=True, num_workers=2, worker_init_fn=worker_init_fn, generator=g)
+    val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=2, worker_init_fn=worker_init_fn, generator=g)
 
     print("[Step 3] Initializing model")
     main_save_path = osp.join(config.main_path, "saves", config.timestring)
@@ -303,12 +299,6 @@ def run(config):
         initial_state_dict = model.state_dict()
         torch.save(initial_state_dict, initial_model_state_path)
 
-    # if config.model == 'ChemGNN_energy':
-    #     optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
-    #     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=30, min_lr=0.000001)
-    # elif config.model == 'ChemGNN_forces':
-    #     optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
-    #     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=50, min_lr=0.0000001)
     print(model)
 
     print("[Step 4] Training...")
@@ -336,118 +326,6 @@ def run(config):
     # set up a trainer for pdmdlightning
     trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1, max_epochs=config.epoch)
     trainer.fit(model=pdmdlightning, train_dataloaders=train_loader,val_dataloaders=val_loader)
-
-    #for epoch in range(1, config.epoch + 1):
-    #    model, train_loss, gradients = train(model, config, train_loader, optimizer)
-    #    val_loss = val(model, config, val_loader)
-    #    scheduler.step(val_loss)
-    #    epoch_train_loss_list.append(train_loss)
-    #    epoch_val_loss_list.append(val_loss)
-    #    lr_list.append(optimizer.param_groups[0]["lr"])
-    #    gradients_list.append(gradients)
-
-    #    if epoch % config.epoch_step == 0:
-    #        now_time = time.time()
-    #        test_log = "Epoch [{0:05d}/{1:05d}] Loss_train:{2:.6f} Loss_val:{3:.6f} Gradients:{4:.6f} Lr:{5:.6f} (Time:{6:.6f}s Time total:{7:.2f}min Time remain: {8:.2f}min)".format(
-    #            epoch, config.epoch, train_loss, val_loss, gradients, optimizer.param_groups[0]["lr"],
-    #            now_time - start_time, (now_time - start_time_0) / 60.0,
-    #            (now_time - start_time_0) / 60.0 / epoch * (config.epoch - epoch))
-    #        print(test_log)
-    #        with open(log_file_path, "a") as f:
-    #            f.write(test_log + "\n")
-    #        start_time = now_time
-    #        torch.save(
-    #            {
-    #                "config": config,
-    #                "epoch": epoch,
-    #                "model_state_dict": model.state_dict(),
-    #                "loss": train_loss
-    #            }, model_save_path)
-
-    # Draw loss
-    # print("[Step 5] Drawing training result...")
-    # loss_length = len(epoch_train_loss_list)
-    # loss_x = range(1, config.epoch + 1)
-
-    # # draw gradients
-    # draw_two_dimension(
-    #     y_lists=[gradients_list],
-    #     x_list=loss_x,
-    #     color_list=["blue"],
-    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(gradients_list[-1], min(gradients_list))],
-    #     line_style_list=["solid"],
-    #     fig_title="Gradients",
-    #     fig_x_label="Epoch",
-    #     fig_y_label="Gradients",
-    #     fig_size=(8, 6),
-    #     show_flag=False,
-    #     save_flag=True,
-    #     save_path=figure_save_path_gradients
-    # )
-
-    # # draw learning rate
-    # draw_two_dimension(
-    #     y_lists=[lr_list],
-    #     x_list=loss_x,
-    #     color_list=["blue"],
-    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(lr_list[-1], min(lr_list))],
-    #     line_style_list=["solid"],
-    #     fig_title="Learning rate",
-    #     fig_x_label="Epoch",
-    #     fig_y_label="Lr",
-    #     fig_size=(8, 6),
-    #     show_flag=False,
-    #     save_flag=True,
-    #     save_path=figure_save_path_lr
-    # )
-
-    # # draw train and validation loss
-    # draw_two_dimension(
-    #     y_lists=[epoch_train_loss_list, epoch_val_loss_list],
-    #     x_list=loss_x,
-    #     color_list=["blue", "red"],  # You can specify colors for each curve
-    #     legend_list=["Train Loss", "Validation Loss"],  # Add legends for each curve
-    #     line_style_list=["solid", "dashed"],  # You can specify line styles
-    #     fig_title="Train and Validation loss",
-    #     fig_x_label="Epoch",
-    #     fig_y_label="Loss",
-    #     fig_size=(8, 6),
-    #     show_flag=False,
-    #     save_flag=True,
-    #     save_path=figure_save_path_combined  # Save the combined plot
-    # )
-
-    # # draw train loss_whole
-    # draw_two_dimension(
-    #     y_lists=[epoch_train_loss_list],
-    #     x_list=loss_x,
-    #     color_list=["blue"],
-    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(epoch_train_loss_list[-1], min(epoch_train_loss_list))],
-    #     line_style_list=["solid"],
-    #     fig_title="Train loss - whole",
-    #     fig_x_label="Epoch",
-    #     fig_y_label="Loss",
-    #     fig_size=(8, 6),
-    #     show_flag=False,
-    #     save_flag=True,
-    #     save_path=figure_save_path_train_loss_whole
-    # )
-
-    # # draw train loss_last_half
-    # draw_two_dimension(
-    #     y_lists=[epoch_train_loss_list[-(loss_length // 2):]],
-    #     x_list=loss_x[-(loss_length // 2):],
-    #     color_list=["blue"],
-    #     legend_list=["loss: last={0:.6f}, min={1:.6f}".format(epoch_train_loss_list[-1], min(epoch_train_loss_list))],
-    #     line_style_list=["solid"],
-    #     fig_title="Loss - last half ({} - Loss{})".format(config.dataset, config.loss_fn_id),
-    #     fig_x_label="Epoch",
-    #     fig_y_label="Loss",
-    #     fig_size=(8, 6),
-    #     show_flag=False,
-    #     save_flag=True,
-    #     save_path=figure_save_path_train_loss_last_half
-    # )
 
     print("[Step 6] Saving final model...")
 
