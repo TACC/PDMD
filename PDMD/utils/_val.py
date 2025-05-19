@@ -3,7 +3,7 @@ import torch
 @torch.no_grad()
 def val(model, config, loader, epoch=None):
     model_name = model.model_name
-    assert model_name in ["ChemGNN_energy", "ChemGNN_force"]
+    assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
     model.eval()
     total_error = 0
     if model_name == "ChemGNN_energy":
@@ -22,7 +22,7 @@ def val(model, config, loader, epoch=None):
             loss = (((out.squeeze() - data.y) / node_counts).abs()).mean()
             total_error += loss.item() * data.num_graphs
         loss = total_error / len(loader.dataset)
-    if model_name == "ChemGNN_force":
+    if model_name == "ChemGNN_forces":
         for data in loader:
             data = data.to(config.device)
             input_dict = dict({
