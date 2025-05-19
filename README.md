@@ -196,10 +196,34 @@ The table below show the training hyperparameters used in our experiments
 | Force       | 2000  | 1024       | 0.002         |
 
 
-(2) Run Training. Note that if you have downloaded our data sets and saved them in the corresponding path, you do not need to process them anymore.
+(2a) Run Training on a single node. Note that if you have downloaded our data sets and saved them in the corresponding path, you do not need to process them anymore.
 
 ```shell
 (venv) ~/PDMD $ python3 run.py --train
+```
+(2b) Run Training on multiple nodes under a SLURM environment, e.g., on TACC's Vista cluster using the following job submission template:
+```shell
+#!/bin/bash 
+#SBATCH -J PDMD 
+#SBATCH -o test.out
+#SBATCH -e test.err
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=0
+#SBATCH -p gh
+#SBATCH -t 01:00:00
+
+module purge
+module reset
+module load gcc/14.2.0
+module load cuda/12.8
+module load nccl/2.19.3
+module load openmpi/5.0.5
+module load python3_mpi/3.11.8
+
+source $SCRATCH/venv/bin/activate
+
+srun python3 run.py --train
 ```
 
 (3) Collect the auto-generated training results in `saves/`.
