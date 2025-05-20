@@ -1,4 +1,4 @@
-PDMD: Potential-free Data-driven Molecular Dynamics (Version 1.1, development version)
+PDMD: Potential-free Data-driven Molecular Dynamics (Version 2.0)
 ===
 
 # Overview
@@ -84,7 +84,7 @@ This project is developed using Python 3.9 and is compatible with macOS, Linux, 
 
 (3) Create a new virtual environment and activate it. In this case we use Virtualenv environment (Here we assume you have installed virtualenv using you source python script), you can use other virtual environments instead (like conda). This part shows how to set it on your macOS or Linux operating system.
 ```shell
-~/PDMD $ python3 -m venv ./venv/
+~/PDMD $ python3 -m venv ./venv/ --system-site-packages
 ~/PDMD $ source venv/bin/activate
 (venv) ~/PDMD $ 
 ```
@@ -101,10 +101,10 @@ For example, on TACC's Vista cluster, the installation of CUDA-enabled Pytorch c
 (venv) ~/PDMD $ module purge
 (venv) ~/PDMD $ module reset
 (venv) ~/PDMD $ module load gcc/14.2.0
-(venv) ~/PDMD $ module load cuda/12.5
+(venv) ~/PDMD $ module load cuda/12.8
 (venv) ~/PDMD $ module load nccl/2.19.3
-(venv) ~/PDMD $ module load python3/3.11.8
-(venv) ~/PDMD $ pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu124
+(venv) ~/PDMD $ module load openmpi/5.0.5
+(venv) ~/PDMD $ module load python3_mpi/3.11.8
 ```
 
 (2) Install other prerequisite packages.
@@ -196,10 +196,34 @@ The table below show the training hyperparameters used in our experiments
 | Force       | 2000  | 1024       | 0.002         |
 
 
-(2) Run Training. Note that if you have downloaded our data sets and saved them in the corresponding path, you do not need to process them anymore.
+(2a) Run Training on a single node. Note that if you have downloaded our data sets and saved them in the corresponding path, you do not need to process them anymore.
 
 ```shell
 (venv) ~/PDMD $ python3 run.py --train
+```
+(2b) Run Training on multiple nodes under a SLURM environment, e.g., on TACC's Vista cluster using the following job submission template:
+```shell
+#!/bin/bash 
+#SBATCH -J PDMD 
+#SBATCH -o test.out
+#SBATCH -e test.err
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=0
+#SBATCH -p gh
+#SBATCH -t 01:00:00
+
+module purge
+module reset
+module load gcc/14.2.0
+module load cuda/12.8
+module load nccl/2.19.3
+module load openmpi/5.0.5
+module load python3_mpi/3.11.8
+
+source $SCRATCH/venv/bin/activate
+
+srun python3 run.py --train
 ```
 
 (3) Collect the auto-generated training results in `saves/`.
@@ -214,7 +238,7 @@ test_true.npy
 The mean absolute errors (MAEs) of PDMD for (a) system energy, and (b) atomic force, across all (H<sub>2</sub>O)<sub>1&le;n&le;21</sub> clusters.
 
 # 4. Citation
-None
+If you use the PDMD code and/or its dataset, please cite our papers titled "PDMD: Potential-free Data-driven Molecular Dynamics for Variable-sized Water Clusters" [https://doi.org/10.48550/arXiv.2412.04442](https://doi.org/10.48550/arXiv.2412.04442) and "Chemical Environment Adaptive Learning for Optical Band Gap Prediction of Doped Graphitic Carbon Nitride Nanosheets" [https://doi.org/10.1007/s00521-024-10775-1]   
 
 # 5. Questions
 

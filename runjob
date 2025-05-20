@@ -1,6 +1,5 @@
 #!/bin/bash 
 #SBATCH -J PDMD 
-#SBATCH -A A-ccsc 
 #SBATCH -o test.out
 #SBATCH -e test.err
 #SBATCH --nodes=2
