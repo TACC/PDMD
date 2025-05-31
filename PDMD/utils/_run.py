@@ -60,6 +60,7 @@ class ChemLightning(lightning.LightningModule):
         train_loader = self.trainer.train_dataloader
         model_name = model.model_name
         assert model_name in ["ChemGNN_energy", "ChemGNN_forces"]
+        total_loss = 0.0
         gradients_list = []
         if model_name == "ChemGNN_energy":
             optimizer.zero_grad()
