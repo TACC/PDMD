@@ -1,4 +1,4 @@
-PDMD: Potential-free Data-driven Molecular Dynamics (Version 2.0)
+PDMD: Potential-free Data-driven Molecular Dynamics (Version 3.0, Development Version)
 ===
 
 # Overview

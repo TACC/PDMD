@@ -228,15 +228,36 @@ def run(config):
         data_type = 'energy'
     elif config.dataset == 'FORCES_DATASET':
         data_type = 'force'
+
+    dataset = MutilWaterDataset(root=dataset_path, split=f"Water_Round4_optimized_{data_type}")
+    trainset_list.append(dataset)
+    dataset = MutilWaterDataset(root=dataset_path, split=f"Water_Round4_optimized_test_{data_type}")
+    valset_list.append(dataset)
+
     for i in range(1, 22):
-        dataset = MutilWaterDataset(root=dataset_path, split=f"{i}water_{data_type}")
+        dataset = MutilWaterDataset(root=dataset_path, split=f"Water{i}_Round4_{data_type}")
+        tr_data, v_data, te_data = split_dataset(dataset, train_p=config.train_ratio, val_p=config.val_ratio,
+                                                 shuffle=True)
+        trainset_list.append(tr_data)
+        valset_list.append(v_data)
+
+    for i in range(22, 31, 1):
+        dataset = MutilWaterDataset(root=dataset_path, split=f"Water{i}_Round4_{data_type}")
         tr_data, v_data, te_data = split_dataset(dataset, train_p=config.train_ratio, val_p=config.val_ratio, shuffle=True)
         trainset_list.append(tr_data)
         valset_list.append(v_data)
-    dataset = MutilWaterDataset(root=dataset_path, split=f"water_{data_type}_optimized")
-    tr_data, v_data, te_data = split_dataset(dataset, train_p=config.train_ratio, val_p=config.val_ratio, shuffle=True)
-    trainset_list.append(tr_data)
-    valset_list.append(v_data)
+
+    for i in range(40, 101, 10):
+        dataset = MutilWaterDataset(root=dataset_path, split=f"Water{i}_Round4_{data_type}")
+        tr_data, v_data, te_data = split_dataset(dataset, train_p=config.train_ratio, val_p=config.val_ratio, shuffle=True)
+        trainset_list.append(tr_data)
+        valset_list.append(v_data)
+
+    for i in range(200, 1001, 100):
+        dataset = MutilWaterDataset(root=dataset_path, split=f"Water{i}_Round4_{data_type}")
+        tr_data, v_data, te_data = split_dataset(dataset, train_p=config.train_ratio, val_p=config.val_ratio, shuffle=True)
+        trainset_list.append(tr_data)
+        valset_list.append(v_data)
 
     train_dataset = ConcatDataset(trainset_list)
     val_dataset = ConcatDataset(valset_list)

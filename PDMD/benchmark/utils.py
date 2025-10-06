@@ -58,7 +58,7 @@ def generate_soap_force(number, pos):
     )
     system = Atoms(symbols=element_string, positions=pos)
     for i in range(len(element_array)):
-        soap_descriptors = torch.from_numpy(soap.create(system, centers=[i]))
+        soap_descriptors = torch.from_numpy(soap.create(system, centers=[i],n_jobs=-1))
         one_hot_encoded = torch.zeros(2)
         if number[i] == 1:
             one_hot_encoded = torch.tensor([1, 0])
@@ -68,7 +68,7 @@ def generate_soap_force(number, pos):
         soap_fea.append(soap_descriptors)
     return soap_fea
 
-def one_time_generate_forward_input_force(number, pos):
+def one_time_generate_forward_input_force(number, pos, CMA):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     max_value = []
@@ -94,13 +94,18 @@ def one_time_generate_forward_input_force(number, pos):
     pos = pos.to(device)
     DMA = torch.cdist(pos, pos)
     BTMA = torch.zeros_like(DMA, dtype=int)
-    # Adaptive Cutoff
-    cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
-    for i, atom_i in enumerate(number):
+
+    if CMA.numel() == 0:
+     # Adaptive Cutoff
+     print("Initializaiton Force CMA...")
+     CMA = torch.zeros_like(DMA)
+     cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
+     for i, atom_i in enumerate(number):
         for j, atom_j in enumerate(number):
-            cutoff = cutoffs[(atom_i, atom_j)]
-            if DMA[i, j] <= cutoff:
-                BTMA[i, j] = 1
+            CMA[i,j] = cutoffs[(atom_i, atom_j)]
+     
+    BTMA = torch.where((DMA-CMA)<=0.0, 1, 0)
+
     """
     mask = DMA <= 1.5
     BTMA[mask] = 1
@@ -120,7 +125,7 @@ def one_time_generate_forward_input_force(number, pos):
         "edge_attr": edge_attr,
         "batch": batch
     })
-    return x
+    return x, CMA
 
 def generate_soap_energy(number, pos):
     element_array = [element_map[num] for num in number]
@@ -139,7 +144,7 @@ def generate_soap_energy(number, pos):
     for iatom in range(len(element_array)):
         output_stream = io.StringIO()
         with contextlib.redirect_stdout(output_stream):
-            soap_descriptors = torch.from_numpy(soap.create(system, centers=[iatom]))
+            soap_descriptors = torch.from_numpy(soap.create(system, centers=[iatom],n_jobs=-1))
             one_hot_encoded = torch.zeros(2)
             if number[iatom] == 1:
                 one_hot_encoded = torch.tensor([1, 0])
@@ -149,7 +154,7 @@ def generate_soap_energy(number, pos):
         tem.append(soap_descriptors)
     return tem
 
-def one_time_generate_forward_input_energy(number, pos):
+def one_time_generate_forward_input_energy(number, pos, CMA):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     max_value = []
@@ -172,13 +177,17 @@ def one_time_generate_forward_input_energy(number, pos):
     DMA = torch.cdist(pos, pos)
     BTMA = torch.zeros_like(DMA, dtype=torch.int, device=device)
 
-    # Adaptive Cutoff
-    cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
-    for i, atom_i in enumerate(number):
+    if CMA.numel() == 0:
+     # Adaptive Cutoff
+     print("Initializaiton Force CMA...")
+     CMA = torch.zeros_like(DMA)
+     cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
+     for i, atom_i in enumerate(number):
         for j, atom_j in enumerate(number):
-            cutoff = cutoffs[(atom_i, atom_j)]
-            if DMA[i, j] <= cutoff:
-                BTMA[i, j] = 1
+            CMA[i,j] = cutoffs[(atom_i, atom_j)]
+
+    BTMA = torch.where((DMA-CMA)<=0.0, 1, 0)
+
     """
     mask = DMA <= 1.5
     BTMA[mask] = 1
@@ -199,7 +208,8 @@ def one_time_generate_forward_input_energy(number, pos):
         "edge_attr": edge_attr,
         "batch": batch
     })
-    return x
+
+    return x, CMA
 
 def reverse_min_max_scaler(data_normalized, data_min=-361.77515914, data_max=-17.19880547, new_min=0.0, new_max=1.0):
     core = (data_normalized - new_min) / (new_max - new_min)

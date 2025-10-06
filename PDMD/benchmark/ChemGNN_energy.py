@@ -43,7 +43,7 @@ class ChemGNN_EnergyModel(torch.nn.Module):
         # convert tensor positions to a numpy ndarray
         # positions = tensor_positions.detach().numpy()
 
-        x = one_time_generate_forward_input_energy(atomic_numbers, tensor_positions)
+        x, self.CMA = one_time_generate_forward_input_energy(atomic_numbers, tensor_positions, self.CMA)
         assert {"x", "edge_index", "edge_attr", "batch"}.issubset(x.keys())
         x, edge_index, edge_attr, batch = iter(
             [x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
