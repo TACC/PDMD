@@ -38,12 +38,12 @@ class ChemGNN_EnergyModel(torch.nn.Module):
         self.pre_mlp = Sequential(Linear(1262, 1262), ReLU())
         self.energy_predictor = Sequential(Linear(self.out_num, 100), ReLU(), Linear(100, 10), ReLU(), Linear(10, 1))
 
-    def forward(self, atomic_numbers, tensor_positions):
+    def forward(self, atomic_numbers, tensor_positions, energy_feature_min_values, energy_feature_max_values):
 
         # convert tensor positions to a numpy ndarray
         # positions = tensor_positions.detach().numpy()
 
-        x, self.CMA = one_time_generate_forward_input_energy(atomic_numbers, tensor_positions, self.CMA)
+        x, self.CMA = one_time_generate_forward_input_energy(atomic_numbers, tensor_positions, self.CMA, energy_feature_min_values, energy_feature_max_values)
         assert {"x", "edge_index", "edge_attr", "batch"}.issubset(x.keys())
         x, edge_index, edge_attr, batch = iter(
             [x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
