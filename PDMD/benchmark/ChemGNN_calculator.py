@@ -3,6 +3,7 @@ import ase
 import torch
 from PDMD.benchmark.ChemGNN_energy import ChemGNN_EnergyModel
 from PDMD.benchmark.ChemGNN_forces import ChemGNN_ForcesModel
+import numpy as np
 
 #define a customarized ASE Calculator
 class ChemGNN_Calculator(Calculator):
@@ -29,9 +30,14 @@ class ChemGNN_Calculator(Calculator):
   checkpoint_energy = torch.load(self.energy_pth_filename,
                                  map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                                  weights_only=False)
+
   energy_model_state_dict = checkpoint_energy["model_state_dict"]
+  energy_feature_min_values = checkpoint_energy["min_energy_values"]
+  energy_feature_max_values = checkpoint_energy["max_energy_values"]
   self.energy_model.load_state_dict(energy_model_state_dict)
   self.energy_model.CMA = CMA
+  self.energy_feature_min_values = energy_feature_min_values
+  self.energy_feature_max_values = energy_feature_max_values
 
   # load forces .pt model
   self.forces_model = ChemGNN_ForcesModel()
@@ -39,9 +45,14 @@ class ChemGNN_Calculator(Calculator):
   checkpoint_forces = torch.load(self.forces_pth_filename,
                                  map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                                  weights_only=False)
+
   forces_model_state_dict = checkpoint_forces["model_state_dict"]
+  forces_feature_min_values = checkpoint_forces["min_force_values"]
+  forces_feature_max_values = checkpoint_forces["max_force_values"]
   self.forces_model.load_state_dict(forces_model_state_dict)
   self.forces_model.CMA = CMA
+  self.forces_feature_min_values = forces_feature_min_values
+  self.forces_feature_max_values = forces_feature_max_values
 
  def __del__(self):
   #delete energy model
@@ -65,8 +76,8 @@ class ChemGNN_Calculator(Calculator):
 
   #convert positions to a torch tensor
   tensor_positions = torch.tensor(positions)
-  energy = self.energy_model(atomic_numbers,tensor_positions)
-  forces = self.forces_model(atomic_numbers,tensor_positions)
+  energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values)
+  forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values)
 
   #energy and forces unit conversion
   #the units for energy and forces in machine learning are Hartree and Hartree/Bohr, respectively
