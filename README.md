@@ -233,7 +233,7 @@ loss_last_half.png      loss_last_quarter.png    loss_whole.png        model_las
 test_true.npy
 ```
 
-## 2.7 Run MD Simulations with pretrained models
+## 2.7 Run MD Simulations with Pretrained Models
 ```shell
 (venv) ~/PDMD $ cd PDMD/example 
 (venv) ~/PDMD $ python3 run.py water.xyz
