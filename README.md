@@ -234,7 +234,7 @@ test_true.npy
 ```
 
 ## 2.7 Run MD Simulations with pretrained models
-``shell
+```shell
 (venv) ~/PDMD $ cd PDMD/example 
 (venv) ~/PDMD $ python3 run.py water.xyz
 ```
