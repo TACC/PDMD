@@ -1,5 +1,6 @@
 from ase.calculators.calculator import Calculator
 import ase
+from ase import units
 import torch
 from PDMD.benchmark.ChemGNN_energy import ChemGNN_EnergyModel
 from PDMD.benchmark.ChemGNN_forces import ChemGNN_ForcesModel
@@ -10,7 +11,7 @@ class ChemGNN_Calculator(Calculator):
 
  implemented_properties = ['energy','forces'] 
  
- def __init__(self,energy_pth_filename,forces_pth_filename):
+ def __init__(self,energy_pth_filename,forces_pth_filename,runtype):
   Calculator.__init__(self)
   self.energy_pth_filename = energy_pth_filename
   self.forces_pth_filename = forces_pth_filename
@@ -19,6 +20,9 @@ class ChemGNN_Calculator(Calculator):
   #filename for the force model in .pth format
   #force_pth_filename
   #print("Force PTH File: ",self.forces_pth_filename)
+  self.runtype = runtype
+  #runtype: benchmark or md for unit conversion
+  #print("Run Type: ",self.runtype)
 
   # allocation CMA for connectivity cutoff matrix
   print("SETTING CMA TO 0")
@@ -82,8 +86,10 @@ class ChemGNN_Calculator(Calculator):
   #energy and forces unit conversion
   #the units for energy and forces in machine learning are Hartree and Hartree/Bohr, respectively
   #while the untis for ASE are eV and eV/Angstrom, respectively
-  # energy = energy*units.Hartree
-  # forces = forces*units.Hartree/units.Bohr
+  if (self.runtype == "md"):
+   energy = energy*units.Hartree
+   forces = forces*units.Hartree/units.Bohr
+   forces = forces.detach().numpy()
 
   self.results = {
        "energy": energy,

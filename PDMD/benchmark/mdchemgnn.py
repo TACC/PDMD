@@ -29,7 +29,7 @@ def benchmark():
    #set water system to the first snapshot
    water = water_molecules[0]
    #set the system's calculator to ChemGNN
-   water.calc=ChemGNN_Calculator("./PDMD/benchmark/energy.pt", "./PDMD/benchmark/forces.pt")
+   water.calc=ChemGNN_Calculator("./PDMD/benchmark/energy.pt", "./PDMD/benchmark/forces.pt",runtype="benchmark")
    #set the energy and forces output filenames
    efile = open(benchmark_dir+"/ML_ENERGY_WAT"+str(cluster_size)+"_"+str(benchmark_size),"a")
    ffile = open(benchmark_dir+"/ML_FORCES_WAT"+str(cluster_size)+"_"+str(benchmark_size),"a")
