@@ -233,6 +233,12 @@ loss_last_half.png      loss_last_quarter.png    loss_whole.png        model_las
 test_true.npy
 ```
 
+## 2.7 Run MD Simulations with pretrained models
+``shell
+(venv) ~/PDMD $ cd PDMD/example 
+(venv) ~/PDMD $ python3 run.py water.xyz
+```
+
 # 3. Examples
 ![MAE](images/MAE_scatter.jpg)
 The mean absolute errors (MAEs) of PDMD for (a) system energy, and (b) atomic force, across all (H<sub>2</sub>O)<sub>1&le;n&le;21</sub> clusters.
