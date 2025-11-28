@@ -26,8 +26,11 @@ input_xyz_filename = str(sys.argv[1])
 #read a water cluster from the designated input XYZ file
 water = read(input_xyz_filename)
 
-#set the water cluster's calculator to ChemGNN
-water.calc = ChemGNN_Calculator(model_path+"/energy.pt",model_path+"/forces.pt","md")
+#define an ChemGNN calculator 
+chemgnn_calculator = ChemGNN_Calculator(model_path+"/energy.pt",model_path+"/forces.pt","md")
+
+#attach the ChemGNN calculator to the water cluster
+water.set_calculator(chemgnn_calculator)
 
 #set the initial temperature to 300.0K
 temperature = 300.0
@@ -39,7 +42,7 @@ tdamp = 10.0*timestep
 md = NoseHooverChainNVT(water, timestep=timestep, temperature_K=temperature, tchain=10, tloop=10, tdamp=tdamp)
 
 #run an MD simulation with nsteps
-nsteps = 1000
+nsteps = 10000
 for istep in range(nsteps):
  #get the water cluster's potential energy
  energy = str(water.get_potential_energy()).lstrip('[').rstrip(']')
