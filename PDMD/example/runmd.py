@@ -49,7 +49,7 @@ for istep in range(nsteps):
  #get the water cluster's temperature
  md_temperature = water.get_temperature()
  #print out some MD information
- print(f"Step: {istep:6d} Temperature: {md_temperature:6.2f}K {energy:10s} eV")
+ print(f"Step: {istep:6d} Temperature: {md_temperature:6.2f}K Energy: {energy:10s}eV")
 
  #run one MD step
  md.run(1)
