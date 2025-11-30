@@ -43,7 +43,7 @@ class ChemGNN_Calculator(Calculator):
    print("NEIGHBOR LIST CONSTRUCTED")
 
   # allocation CMA for connectivity cutoff matrix
-  print("SETTING CMA TO 0")
+  print("SETTING CMA TO EMPTY")
   CMA = torch.empty((0,0))
 
   #load energy .pt model

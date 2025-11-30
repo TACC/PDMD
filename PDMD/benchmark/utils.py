@@ -109,11 +109,15 @@ def one_time_generate_forward_input_force(number, pos, CMA, forces_feature_min_v
     if CMA.numel() == 0:
      # Adaptive Cutoff
      print("Initializaiton Force CMA...")
-     CMA = torch.zeros_like(DMA)
+     natoms = len(number)
+     CMA_numpy = np.zeros((natoms,natoms))
      cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
      for i, atom_i in enumerate(number):
         for j, atom_j in enumerate(number):
-            CMA[i,j] = cutoffs[(atom_i, atom_j)]
+            CMA_numpy[i,j] = cutoffs[(atom_i, atom_j)]
+     CMA = torch.from_numpy(CMA_numpy).to(device)
+     del CMA_numpy
+     print("Completed the initilization of Force CMA")
      
     BTMA = torch.where((DMA-CMA)<=0.0, 1, 0)
 
@@ -203,12 +207,16 @@ def one_time_generate_forward_input_energy(number, pos, CMA, energy_feature_min_
 
     if CMA.numel() == 0:
      # Adaptive Cutoff
-     print("Initializaiton Force CMA...")
-     CMA = torch.zeros_like(DMA)
+     print("Initializaiton Energy CMA...")
+     natoms = len(number)
+     CMA_numpy = np.zeros((natoms,natoms))
      cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
      for i, atom_i in enumerate(number):
         for j, atom_j in enumerate(number):
-            CMA[i,j] = cutoffs[(atom_i, atom_j)]
+            CMA_numpy[i,j] = cutoffs[(atom_i, atom_j)]
+     CMA = torch.from_numpy(CMA_numpy).to(device)
+     del CMA_numpy
+     print("Completed the initilization of Energy CMA")
 
     BTMA = torch.where((DMA-CMA)<=0.0, 1, 0)
 
