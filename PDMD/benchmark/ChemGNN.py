@@ -112,10 +112,6 @@ class CEALConv(MessagePassing):
         device = torch.device("cuda" if torch.cuda.is_available() and 'cuda' else "cpu")
         outs = []
 
-        #range in the index tensor
-        max_index = torch.max(index).item()
-        min_index = torch.min(index).item()
-        unique_index = max_index - min_index + 1
         #the second and third dimension sizes of the inputs tensor
         ydim_inputs = inputs.size(dim=1)
         zdim_inputs = inputs.size(dim=2)
@@ -125,33 +121,22 @@ class CEALConv(MessagePassing):
 
         for aggregator in self.aggregators:
             if aggregator == 'sum':
-                out = torch.zeros(unique_index, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
+                out = torch.zeros(dim_size, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
                 out = weights[0] * out.scatter_reduce(dim=0, index=tensor_index, src=inputs, reduce="sum", include_self=False)
-                # out = weights[0] * scatter(inputs, index, 0, None, dim_size, reduce='sum')
-                # out = weights[0] * scatter_sum(inputs, index, 0, None, dim_size=dim_size)
             elif aggregator == 'mean':
-                out = torch.zeros(unique_index, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
+                out = torch.zeros(dim_size, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
                 out = weights[1] * out.scatter_reduce(dim=0, index=tensor_index, src=inputs, reduce="mean", include_self=False)
-                # out = weights[1] * scatter(inputs, index, 0, None, dim_size, reduce='mean')
-                # out = weights[1] * scatter_mean(inputs, index, 0, None, dim_size=dim_size)
             elif aggregator == 'min':
-                out = torch.zeros(unique_index, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
+                out = torch.zeros(dim_size, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
                 out = weights[2] * out.scatter_reduce(dim=0, index=tensor_index, src=inputs, reduce="amin", include_self=False)
-                # out = weights[2] * scatter(inputs, index, 0, None, dim_size, reduce='min')
-                # out = scatter(inputs, index, 0, None, dim_size, reduce='min')
             elif aggregator == 'max':
-                out = torch.zeros(unique_index, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
+                out = torch.zeros(dim_size, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
                 out = weights[3] * out.scatter_reduce(dim=0, index=tensor_index, src=inputs, reduce="amax", include_self=False)
-                # out = weights[3] * scatter(inputs, index, 0, None, dim_size, reduce='max')
-                # out = scatter(inputs, index, 0, None, dim_size, reduce='max')
             elif aggregator == 'var' or aggregator == 'std':
-                mean =  torch.zeros(unique_index, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
+                mean =  torch.zeros(dim_size, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
                 mean = mean.scatter_reduce(dim=0, index=tensor_index, src=inputs, reduce="mean", include_self=False)
-                mean_squares = torch.zeros(unique_index, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
+                mean_squares = torch.zeros(dim_size, ydim_inputs, zdim_inputs, dtype=inputs.dtype).to(device)
                 mean_squares = mean_squares.scatter_reduce(dim=0, index=tensor_index, src=inputs * inputs, reduce="mean", include_self=False)
-                # mean = scatter(inputs, index, 0, None, dim_size, reduce='mean')
-                # mean_squares = scatter(inputs * inputs, index, 0, None,
-                #                       dim_size, reduce='mean')
                 out = (mean_squares - mean * mean)
                 if aggregator == 'std':
                     out = weights[4] * torch.sqrt(torch.relu(out) + 1e-5)
