@@ -112,8 +112,10 @@ class CEALConv(MessagePassing):
         device = torch.device("cuda" if torch.cuda.is_available() and 'cuda' else "cpu")
         outs = []
 
-        #unique values in the index tensor
-        unique_index = list(index.unique().size())[0]
+        #range in the index tensor
+        max_index = torch.max(index).item()
+        min_index = torch.min(index).item()
+        unique_index = max_index - min_index + 1
         #the second and third dimension sizes of the inputs tensor
         ydim_inputs = inputs.size(dim=1)
         zdim_inputs = inputs.size(dim=2)
