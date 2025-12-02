@@ -72,18 +72,25 @@ def generate_soap_force(number, pos, neighborlist=None):
     # for MD simulations accelerated by a neighborlist
     else:
       system = Atoms(symbols=element_string, positions=pos)
+      
+      subsystems = []
+      subsystem_centers = [] 
       for i in range(len(element_array)):
         nl_indices, nl_offsets = neighborlist.get_neighbors(i)
-        subsystem = system[nl_indices]
-        subsystem_center = nl_indices.tolist().index(i)
-        soap_descriptors = torch.from_numpy(soap.create(subsystem, centers=[subsystem_center],n_jobs=-1))
+        subsystems.append(system[nl_indices])
+        subsystem_centers.append([nl_indices.tolist().index(i)])
+       
+      soap_descriptors = torch.from_numpy(soap.create(subsystems, centers=subsystem_centers,n_jobs=-1))
+     
+      for i in range(len(element_array)):
         one_hot_encoded = torch.zeros(2)
         if number[i] == 1:
             one_hot_encoded = torch.tensor([1, 0])
         if number[i] == 8:
             one_hot_encoded = torch.tensor([0, 1])
-        soap_descriptors = torch.hstack((one_hot_encoded, soap_descriptors))
-        soap_fea.append(soap_descriptors)
+        soap_fea.append(torch.hstack((one_hot_encoded, soap_descriptors[i])))
+       
+      del subsystems, subsystem_centers
 
     return soap_fea
 
@@ -173,27 +180,35 @@ def generate_soap_energy(number, pos, neighborlist=None):
     else:
       system = Atoms(symbols=element_string, positions=pos)
       tem = []
+
+      subsystems = []
+      subsystem_centers = []
       for iatom in range(len(element_array)):
-        output_stream = io.StringIO()
-        with contextlib.redirect_stdout(output_stream):
-            nl_indices, nl_offsets = neighborlist.get_neighbors(iatom)
-            subsystem = system[nl_indices]
-            subsystem_center = nl_indices.tolist().index(iatom) 
-            soap_descriptors = torch.from_numpy(soap.create(subsystem, centers=[subsystem_center],n_jobs=-1))
-            one_hot_encoded = torch.zeros(2)
-            if number[iatom] == 1:
-                one_hot_encoded = torch.tensor([1, 0])
-            if number[iatom] == 8:
-                one_hot_encoded = torch.tensor([0, 1])
-            soap_descriptors = torch.hstack((one_hot_encoded, soap_descriptors))
-        tem.append(soap_descriptors)
+         nl_indices, nl_offsets = neighborlist.get_neighbors(iatom)
+         subsystems.append(system[nl_indices])
+         subsystem_centers.append([nl_indices.tolist().index(iatom)])
+
+      output_stream = io.StringIO()
+      with contextlib.redirect_stdout(output_stream):
+         soap_descriptors = torch.from_numpy(soap.create(subsystems, centers=subsystem_centers,n_jobs=-1))
+     
+      for iatom in range(len(element_array)):                           
+         one_hot_encoded = torch.zeros(2)
+         if number[iatom] == 1:
+             one_hot_encoded = torch.tensor([1, 0])
+         if number[iatom] == 8:
+             one_hot_encoded = torch.tensor([0, 1])
+         tem.append(torch.hstack((one_hot_encoded, soap_descriptors[iatom])))
+
+      del subsystems, subsystem_centers
 
     return tem
 
 def one_time_generate_forward_input_energy(number, pos, CMA, energy_feature_min_values, energy_feature_max_values, neighborlist=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+ 
     x_full = generate_soap_energy(number, pos, neighborlist)
+
     x_full = torch.stack(x_full).to(device)
     x_full = x_full.to(torch.float32)
     energy_feature_min_values = energy_feature_min_values.to(device).to(torch.float32)
