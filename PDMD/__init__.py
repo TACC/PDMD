@@ -12,7 +12,6 @@ __all__ = [
     'split_dataset',
     'worker_init_fn',
     'draw_two_dimension',
-    'reverse_min_max_scaler_1d',
     'train',
     'val',
     'CEALConv',

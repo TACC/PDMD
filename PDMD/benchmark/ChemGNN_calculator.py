@@ -1,7 +1,7 @@
 from ase.calculators.calculator import Calculator
 import ase
 from ase import units
-from ase.neighborlist import NewPrimitiveNeighborList
+from vesin.torch import NeighborList
 import torch
 from PDMD.benchmark.ChemGNN_energy import ChemGNN_EnergyModel
 from PDMD.benchmark.ChemGNN_forces import ChemGNN_ForcesModel
@@ -24,27 +24,40 @@ class ChemGNN_Calculator(Calculator):
   self.runtype = runtype
   #runtype: benchmark or md for unit conversion
   #print("Run Type: ",self.runtype)
-  # for MD runs, construct a neighbor list
+  
+  # for MD runs, construct two neighbor lists
+  # one for SOAP and the other for ChemGNN
   if (self.runtype == "md"):
-   #set up a neighor list for the system
+   #set up a neighor list for SOAP 
    #cutoff distance set to 10.0 angstrom
    nl_cutoffs = 10.0
    #buffer thickness set to 1.0 angstrom
    nl_skin = 1.0
    #no need to sort the neighbor list
-   nl_sorted = False
+   nl_sorted = True 
    #include an atom into its neighborlist
    nl_self = True
    #double-count the neighborlist
    nl_bothways = True
    #do not use scaled positions
    nl_use_scaled_positions = False
-   self.neighborlist = NewPrimitiveNeighborList(cutoffs = nl_cutoffs, skin = nl_skin, sorted = nl_sorted, self_interaction = nl_self, bothways = nl_bothways, use_scaled_positions = nl_use_scaled_positions)
-   print("NEIGHBOR LIST CONSTRUCTED")
+   self.neighborlist_soap = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
 
-  # allocation CMA for connectivity cutoff matrix
-  print("SETTING CMA TO EMPTY")
-  CMA = torch.empty((0,0))
+   #set up a neighor list for ChemGNN 
+   #cutoff distance set to 3.0 angstrom 
+   nl_cutoffs = 3.0 
+   #buffer thickness set to 1.0 angstrom
+   nl_skin = 1.0
+   #no need to sort the neighbor list
+   nl_sorted = True 
+   #exclude an atom from its neighborlist
+   nl_self = False 
+   #double-count the neighborlist
+   nl_bothways = True
+   #do not use scaled positions
+   nl_use_scaled_positions = False
+   self.neighborlist_chemgnn = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
+   print("NEIGHBOR LISTS CONSTRUCTED")
 
   #load energy .pt model
   self.energy_model = ChemGNN_EnergyModel()
@@ -57,7 +70,6 @@ class ChemGNN_Calculator(Calculator):
   energy_feature_min_values = checkpoint_energy["min_energy_values"]
   energy_feature_max_values = checkpoint_energy["max_energy_values"]
   self.energy_model.load_state_dict(energy_model_state_dict)
-  self.energy_model.CMA = CMA
   self.energy_feature_min_values = energy_feature_min_values
   self.energy_feature_max_values = energy_feature_max_values
 
@@ -72,7 +84,6 @@ class ChemGNN_Calculator(Calculator):
   forces_feature_min_values = checkpoint_forces["min_force_values"]
   forces_feature_max_values = checkpoint_forces["max_force_values"]
   self.forces_model.load_state_dict(forces_model_state_dict)
-  self.forces_model.CMA = CMA
   self.forces_feature_min_values = forces_feature_min_values
   self.forces_feature_max_values = forces_feature_max_values
 
@@ -86,6 +97,7 @@ class ChemGNN_Calculator(Calculator):
    
  def calculate(self, atoms=None, properties=["energy", "forces"], system_changes=ase.calculators.calculator.all_changes):
   ase.calculators.calculator.Calculator.calculate(self,atoms,properties,system_changes) 
+
   #print("Number of atoms: ",len(atoms))
   atomic_numbers = atoms.get_atomic_numbers()
   #print("Atomic Numbers: ",atomic_numbers)
@@ -95,14 +107,10 @@ class ChemGNN_Calculator(Calculator):
   self.energy_model.eval()
   self.forces_model.eval()
 
-  if (self.runtype == "md"):
-   self.neighborlist.update(atoms.pbc, atoms.get_cell(), atoms.positions)
-   #print("N_UPDATES: ",self.neighborlist.nupdates)
-
   #convert positions to a torch tensor
   tensor_positions = torch.tensor(positions)
-  energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values, self.neighborlist)
-  forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values, self.neighborlist)
+  energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
+  forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
 
   #energy and forces unit conversion
   #the units for energy and forces in machine learning are Hartree and Hartree/Bohr, respectively

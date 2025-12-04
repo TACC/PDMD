@@ -17,6 +17,5 @@ __all__ = [
     'one_time_generate_forward_input_force',
     'generate_soap_energy',
     'one_time_generate_forward_input_energy',
-    'reverse_min_max_scaler',
     'benchmark'
 ]

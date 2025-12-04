@@ -1,6 +1,8 @@
 torch >= 2.0.0
 torchvision 
 torchaudio
+vesin
+vesin[torch]
 mpi4py
 lightning
 lightning[extra]

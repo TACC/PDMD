@@ -44,7 +44,7 @@ atomic_energy_map = {
     8: -15.9556439593
 }
 
-def generate_soap_force(number, pos, neighborlist=None):
+def generate_soap_force(number, pos, neighborlist_soap=None):
     soap_fea = []
     element_array = [element_map[num] for num in number]
     element_string = ''.join(element_array)
@@ -58,7 +58,7 @@ def generate_soap_force(number, pos, neighborlist=None):
     )
 
     # for training and benchmarking when a neighborlist is not applicable
-    if (neighborlist is None):
+    if (neighborlist_soap is None):
       system = Atoms(symbols=element_string, positions=pos)
       for i in range(len(element_array)):
         soap_descriptors = torch.from_numpy(soap.create(system, centers=[i],n_jobs=-1))
@@ -75,11 +75,17 @@ def generate_soap_force(number, pos, neighborlist=None):
       
       subsystems = []
       subsystem_centers = [] 
+
+      device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+      box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
+      points = pos.to(device)
+      nl_ij = neighborlist_soap.compute(points=points,box=box,periodic=False,quantities="P")[0]
       for i in range(len(element_array)):
-        nl_indices, nl_offsets = neighborlist.get_neighbors(i)
+        nl_indices = nl_ij[nl_ij[:,0] == i,1].tolist()
+        nl_indices.insert(0,i)
         subsystems.append(system[nl_indices])
-        subsystem_centers.append([nl_indices.tolist().index(i)])
-       
+        subsystem_centers.append([0])
+
       soap_descriptors = torch.from_numpy(soap.create(subsystems, centers=subsystem_centers,n_jobs=-1))
      
       for i in range(len(element_array)):
@@ -94,48 +100,44 @@ def generate_soap_force(number, pos, neighborlist=None):
 
     return soap_fea
 
-def one_time_generate_forward_input_force(number, pos, CMA, forces_feature_min_values, forces_feature_max_values, neighborlist=None):
+def one_time_generate_forward_input_force(number, pos, forces_feature_min_values, forces_feature_max_values, neighborlist_soap=None, neighborlist_chemgnn=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    x_full = generate_soap_force(number, pos, neighborlist)
+    x_full = generate_soap_force(number, pos, neighborlist_soap)
     x_full = torch.stack(x_full).to(device)
     x_full = x_full.to(torch.float32)
     forces_feature_min_values = forces_feature_min_values.to(device).to(torch.float32)
     forces_feature_max_values = forces_feature_max_values.to(device).to(torch.float32)
 
     x_full = (x_full - forces_feature_min_values) / (forces_feature_max_values - forces_feature_min_values)
-    # x_full = torch.stack(x_full)
-    # for i in range(722):
-    #     x_full[:, i] = tensor_min_max_scaler_1d(x_full[:, i], max=max_value[i], min=min_value[i])
-    # x_full = x_full.to(torch.float32).to(device)
 
     pos = pos.to(device)
-    DMA = torch.cdist(pos, pos)
-    BTMA = torch.zeros_like(DMA, dtype=int)
 
-    if CMA.numel() == 0:
-     # Adaptive Cutoff
-     print("Initializaiton Force CMA...")
-     natoms = len(number)
-     CMA_numpy = np.zeros((natoms,natoms))
-     cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
-     for i, atom_i in enumerate(number):
-        for j, atom_j in enumerate(number):
-            CMA_numpy[i,j] = cutoffs[(atom_i, atom_j)]
-     CMA = torch.from_numpy(CMA_numpy).to(device)
-     del CMA_numpy
-     print("Completed the initilization of Force CMA")
-     
-    BTMA = torch.where((DMA-CMA)<=0.0, 1, 0)
+    cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
+    if (neighborlist_chemgnn is None):
+       print("A neighbor list is required for MD runs!") 
+    else:
+       edge_index = []
+       edge_attr = []
 
-    """
-    mask = DMA <= 1.5
-    BTMA[mask] = 1
-    """
-    BTMA.fill_diagonal_(0)
-    adj = DMA * BTMA
-    edge_index = adj.nonzero(as_tuple=False).t().contiguous()
-    edge_attr = adj[edge_index[0], edge_index[1]].to(torch.long)
+       device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+       box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
+       points = pos.to(device)
+       nl_ij, nl_d = neighborlist_chemgnn.compute(points=points,box=box,periodic=False,quantities="Pd")
+
+       for i, atom_i in enumerate(number):
+          nl_indices = nl_ij[nl_ij[:,0] == i,1].tolist()
+          nl_d_i = nl_d[nl_ij[:,0] == i].tolist()
+          for j_d, j in enumerate(nl_indices):
+              atom_j = number[j]
+              distance_ij = nl_d_i[j_d]
+              if ( distance_ij < cutoffs[(atom_i, atom_j)]):
+                  edge_index.append([i,j])
+                  edge_attr.append(distance_ij)
+
+       edge_index = torch.tensor(edge_index).t().to(device)
+       edge_attr = torch.tensor(edge_attr).to(torch.long).to(device)
+
     c = int(pos.shape[0])
     batch = []
     for i in range(int(c / len(number))):
@@ -147,9 +149,9 @@ def one_time_generate_forward_input_force(number, pos, CMA, forces_feature_min_v
         "edge_attr": edge_attr,
         "batch": batch
     })
-    return x, CMA
+    return x 
 
-def generate_soap_energy(number, pos, neighborlist=None):
+def generate_soap_energy(number, pos, neighborlist_soap=None):
     element_array = [element_map[num] for num in number]
     element_string = ''.join(element_array)
     soap = SOAP(
@@ -162,7 +164,7 @@ def generate_soap_energy(number, pos, neighborlist=None):
     )
 
     # for training and benchmarking when a neighborlist is not applicable
-    if (neighborlist is None):
+    if (neighborlist_soap is None):
       system = Atoms(symbols=element_string, positions=pos)
       tem = []
       for iatom in range(len(element_array)):
@@ -180,13 +182,19 @@ def generate_soap_energy(number, pos, neighborlist=None):
     else:
       system = Atoms(symbols=element_string, positions=pos)
       tem = []
-
+      
       subsystems = []
       subsystem_centers = []
+
+      device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+      box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
+      points = pos.to(device)
+      nl_ij = neighborlist_soap.compute(points=points,box=box,periodic=False,quantities="P")[0]
       for iatom in range(len(element_array)):
-         nl_indices, nl_offsets = neighborlist.get_neighbors(iatom)
+         nl_indices = nl_ij[nl_ij[:,0] == iatom,1].tolist()
+         nl_indices.insert(0,iatom)
          subsystems.append(system[nl_indices])
-         subsystem_centers.append([nl_indices.tolist().index(iatom)])
+         subsystem_centers.append([0])
 
       output_stream = io.StringIO()
       with contextlib.redirect_stdout(output_stream):
@@ -204,10 +212,10 @@ def generate_soap_energy(number, pos, neighborlist=None):
 
     return tem
 
-def one_time_generate_forward_input_energy(number, pos, CMA, energy_feature_min_values, energy_feature_max_values, neighborlist=None):
+def one_time_generate_forward_input_energy(number, pos, energy_feature_min_values, energy_feature_max_values, neighborlist_soap=None, neighborlist_chemgnn=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
  
-    x_full = generate_soap_energy(number, pos, neighborlist)
+    x_full = generate_soap_energy(number, pos, neighborlist_soap)
 
     x_full = torch.stack(x_full).to(device)
     x_full = x_full.to(torch.float32)
@@ -217,32 +225,31 @@ def one_time_generate_forward_input_energy(number, pos, CMA, energy_feature_min_
     x_full = (x_full - energy_feature_min_values) / (energy_feature_max_values - energy_feature_min_values)
 
     pos = pos.to(device)
-    DMA = torch.cdist(pos, pos)
-    BTMA = torch.zeros_like(DMA, dtype=torch.int, device=device)
 
-    if CMA.numel() == 0:
-     # Adaptive Cutoff
-     print("Initializaiton Energy CMA...")
-     natoms = len(number)
-     CMA_numpy = np.zeros((natoms,natoms))
-     cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
-     for i, atom_i in enumerate(number):
-        for j, atom_j in enumerate(number):
-            CMA_numpy[i,j] = cutoffs[(atom_i, atom_j)]
-     CMA = torch.from_numpy(CMA_numpy).to(device)
-     del CMA_numpy
-     print("Completed the initilization of Energy CMA")
+    cutoffs = {(1, 1): 1.6, (1, 8): 2.4, (8, 1): 2.4, (8, 8): 2.8}
+    if (neighborlist_chemgnn is None):
+       print("A neighbor list is required for MD runs!")
+    else:
+       device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+       box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
+       points = pos.to(device)
+       nl_ij, nl_d = neighborlist_chemgnn.compute(points=points,box=box,periodic=False,quantities="Pd")
+ 
+       edge_index = []
+       edge_attr = []
+       for i, atom_i in enumerate(number):
+          nl_indices = nl_ij[nl_ij[:,0] == i,1].tolist()
+          nl_d_i = nl_d[nl_ij[:,0] == i].tolist()
+          for j_d, j in enumerate(nl_indices):
+              atom_j = number[j]
+              distance_ij = nl_d_i[j_d]
+              if ( distance_ij < cutoffs[(atom_i, atom_j)]):
+                  edge_index.append([i,j])
+                  edge_attr.append(distance_ij)
 
-    BTMA = torch.where((DMA-CMA)<=0.0, 1, 0)
+       edge_index = torch.tensor(edge_index).t().to(device)
+       edge_attr = torch.tensor(edge_attr).to(torch.long).to(device)
 
-    """
-    mask = DMA <= 1.5
-    BTMA[mask] = 1
-    """
-    BTMA.fill_diagonal_(0)
-    adj = DMA * BTMA
-    edge_index = adj.nonzero(as_tuple=False).t().contiguous()
-    edge_attr = adj[edge_index[0], edge_index[1]].to(torch.long)
     c = int(pos.shape[0])
     batch = []
     for i in range(int(c / len(number))):
@@ -256,12 +263,7 @@ def one_time_generate_forward_input_energy(number, pos, CMA, energy_feature_min_
         "batch": batch
     })
 
-    return x, CMA
-
-def reverse_min_max_scaler(data_normalized, data_min=-361.77515914, data_max=-17.19880547, new_min=0.0, new_max=1.0):
-    core = (data_normalized - new_min) / (new_max - new_min)
-    data_original = core * (data_max - data_min) + data_min
-    return data_original
+    return x 
 
 def molecular_energy(atomic_numbers, energy, atomic_energy_map):
     for atom in atomic_numbers:
