@@ -6,6 +6,15 @@ from torch_geometric.utils import degree
 import io
 import contextlib
 import numpy as np
+from torch_scatter import scatter
+
+def get_unique_elements_first_idx(tensor):
+    unique, inverse = torch.unique(tensor, sorted=True, return_inverse=True)
+    perm = torch.arange(inverse.size(0), dtype=inverse.dtype, device=inverse.device)
+    inverse, perm = inverse.flip([0]), perm.flip([0])
+    first_indices = scatter(perm, inverse, -1, reduce="min")
+
+    return first_indices, unique
 
 def tensor_min_max_scaler_1d(data, max, min, new_min=0.0, new_max=1.0):
     assert torch.is_tensor(data)
@@ -72,19 +81,22 @@ def generate_soap_force(number, pos, neighborlist_soap=None):
     # for MD simulations accelerated by a neighborlist
     else:
       system = Atoms(symbols=element_string, positions=pos)
-      
-      subsystems = []
-      subsystem_centers = [] 
-
       device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-      box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
-      points = pos.to(device)
-      nl_ij = neighborlist_soap.compute(points=points,box=box,periodic=False,quantities="P")[0]
-      for i in range(len(element_array)):
-        nl_indices = nl_ij[nl_ij[:,0] == i,1].tolist()
-        nl_indices.insert(0,i)
-        subsystems.append(system[nl_indices])
-        subsystem_centers.append([0])
+      nl_ij = neighborlist_soap.compute(pos.to(device),
+                                        box=float('inf') * torch.eye(3,dtype=torch.float64).to(device),
+                                        periodic=False,
+                                        quantities="P")[0]
+      sorted_values, sort_indices = torch.sort(nl_ij[:, 0])
+      sorted_nl_ij = nl_ij[sort_indices]
+      first_occurence_indices, unique_values = get_unique_elements_first_idx(sorted_values)
+      first_occurence_indices = torch.cat((first_occurence_indices,torch.tensor([len(sorted_values)]).to(device)))
+      subsystems = []
+      subsystem_centers = [[0] for _ in range(len(unique_values))]
+      for i in range(len(unique_values)):
+          first_index = first_occurence_indices[i]
+          final_index = first_occurence_indices[i+1]
+          nl_indices = torch.cat([torch.tensor([unique_values[i]]).to(device),sorted_nl_ij[first_index:final_index,1]]).cpu().numpy()
+          subsystems.append(system[nl_indices])
 
       soap_descriptors = torch.from_numpy(soap.create(subsystems, centers=subsystem_centers,n_jobs=-1))
      
@@ -152,6 +164,7 @@ def one_time_generate_forward_input_force(number, pos, forces_feature_min_values
     return x 
 
 def generate_soap_energy(number, pos, neighborlist_soap=None):
+    tem = []
     element_array = [element_map[num] for num in number]
     element_string = ''.join(element_array)
     soap = SOAP(
@@ -166,11 +179,10 @@ def generate_soap_energy(number, pos, neighborlist_soap=None):
     # for training and benchmarking when a neighborlist is not applicable
     if (neighborlist_soap is None):
       system = Atoms(symbols=element_string, positions=pos)
-      tem = []
       for iatom in range(len(element_array)):
         output_stream = io.StringIO()
         with contextlib.redirect_stdout(output_stream):
-            soap_descriptors = torch.from_numpy(soap.create(system, centers=[iatom],n_jobs=-1))
+            soap_descriptors = torch.from_numpy(soap.create(system, centers=[iatom],n_jobs=-1,verbose=False))
             one_hot_encoded = torch.zeros(2)
             if number[iatom] == 1:
                 one_hot_encoded = torch.tensor([1, 0])
@@ -181,24 +193,26 @@ def generate_soap_energy(number, pos, neighborlist_soap=None):
     # for MD simulations accelerated by a neighborlist
     else:
       system = Atoms(symbols=element_string, positions=pos)
-      tem = []
-      
-      subsystems = []
-      subsystem_centers = []
-
       device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-      box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
-      points = pos.to(device)
-      nl_ij = neighborlist_soap.compute(points=points,box=box,periodic=False,quantities="P")[0]
-      for iatom in range(len(element_array)):
-         nl_indices = nl_ij[nl_ij[:,0] == iatom,1].tolist()
-         nl_indices.insert(0,iatom)
-         subsystems.append(system[nl_indices])
-         subsystem_centers.append([0])
+      nl_ij = neighborlist_soap.compute(pos.to(device),
+                                        box=float('inf') * torch.eye(3,dtype=torch.float64).to(device),
+                                        periodic=False,
+                                        quantities="P")[0]
+      sorted_values, sort_indices = torch.sort(nl_ij[:, 0])
+      sorted_nl_ij = nl_ij[sort_indices]
+      first_occurence_indices, unique_values = get_unique_elements_first_idx(sorted_values)
+      first_occurence_indices = torch.cat((first_occurence_indices,torch.tensor([len(sorted_values)]).to(device)))
+      subsystems = []
+      subsystem_centers = [[0] for _ in range(len(unique_values))]
+      for i in range(len(unique_values)):
+          first_index = first_occurence_indices[i]
+          final_index = first_occurence_indices[i+1]
+          nl_indices = torch.cat([torch.tensor([unique_values[i]]).to(device),sorted_nl_ij[first_index:final_index,1]]).cpu().numpy()
+          subsystems.append(system[nl_indices])
 
       output_stream = io.StringIO()
       with contextlib.redirect_stdout(output_stream):
-         soap_descriptors = torch.from_numpy(soap.create(subsystems, centers=subsystem_centers,n_jobs=-1))
+          soap_descriptors = torch.from_numpy(soap.create(subsystems, centers=subsystem_centers,n_jobs=1,verbose=False))
      
       for iatom in range(len(element_array)):                           
          one_hot_encoded = torch.zeros(2)
@@ -214,9 +228,8 @@ def generate_soap_energy(number, pos, neighborlist_soap=None):
 
 def one_time_generate_forward_input_energy(number, pos, energy_feature_min_values, energy_feature_max_values, neighborlist_soap=None, neighborlist_chemgnn=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
- 
-    x_full = generate_soap_energy(number, pos, neighborlist_soap)
 
+    x_full = generate_soap_energy(number, pos, neighborlist_soap)
     x_full = torch.stack(x_full).to(device)
     x_full = x_full.to(torch.float32)
     energy_feature_min_values = energy_feature_min_values.to(device).to(torch.float32)
