@@ -63,7 +63,8 @@ def generate_soap_force(number, pos, neighborlist_soap=None):
         n_max=10,
         l_max=5,
         periodic=False,
-        average="cc"
+        average="cc",
+        dtype="float32"
     )
 
     # for training and benchmarking when a neighborlist is not applicable
@@ -133,22 +134,17 @@ def one_time_generate_forward_input_force(number, pos, forces_feature_min_values
        edge_attr = []
 
        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+       number_tensor = torch.from_numpy(number).to(device)
        box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
        points = pos.to(device)
        nl_ij, nl_d = neighborlist_chemgnn.compute(points=points,box=box,periodic=False,quantities="Pd")
-
-       for i, atom_i in enumerate(number):
-          nl_indices = nl_ij[nl_ij[:,0] == i,1].tolist()
-          nl_d_i = nl_d[nl_ij[:,0] == i].tolist()
-          for j_d, j in enumerate(nl_indices):
-              atom_j = number[j]
-              distance_ij = nl_d_i[j_d]
-              if ( distance_ij < cutoffs[(atom_i, atom_j)]):
-                  edge_index.append([i,j])
-                  edge_attr.append(distance_ij)
-
-       edge_index = torch.tensor(edge_index).t().to(device)
-       edge_attr = torch.tensor(edge_attr).to(torch.long).to(device)
+       nl_atom_i = number_tensor[nl_ij[:,0]]
+       nl_atom_j = number_tensor[nl_ij[:,1]]
+       nl_atom_pair = list(zip(nl_atom_i.tolist(),nl_atom_j.tolist()))
+       nl_cutoffs = torch.tensor(list(map(cutoffs.get, nl_atom_pair))).to(device)
+       nl_connected_indices = (nl_d < nl_cutoffs).nonzero(as_tuple=True)[0]
+       edge_index = nl_ij[nl_connected_indices,:].t()
+       edge_attr = nl_d[nl_connected_indices].to(torch.long)
 
     c = int(pos.shape[0])
     batch = []
@@ -173,7 +169,8 @@ def generate_soap_energy(number, pos, neighborlist_soap=None):
         n_max=10,
         l_max=5,
         periodic=False,
-        average="outer"
+        average="outer",
+        dtype="float32"
     )
 
     # for training and benchmarking when a neighborlist is not applicable
@@ -244,24 +241,17 @@ def one_time_generate_forward_input_energy(number, pos, energy_feature_min_value
        print("A neighbor list is required for MD runs!")
     else:
        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+       number_tensor = torch.from_numpy(number).to(device)
        box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
        points = pos.to(device)
        nl_ij, nl_d = neighborlist_chemgnn.compute(points=points,box=box,periodic=False,quantities="Pd")
- 
-       edge_index = []
-       edge_attr = []
-       for i, atom_i in enumerate(number):
-          nl_indices = nl_ij[nl_ij[:,0] == i,1].tolist()
-          nl_d_i = nl_d[nl_ij[:,0] == i].tolist()
-          for j_d, j in enumerate(nl_indices):
-              atom_j = number[j]
-              distance_ij = nl_d_i[j_d]
-              if ( distance_ij < cutoffs[(atom_i, atom_j)]):
-                  edge_index.append([i,j])
-                  edge_attr.append(distance_ij)
-
-       edge_index = torch.tensor(edge_index).t().to(device)
-       edge_attr = torch.tensor(edge_attr).to(torch.long).to(device)
+       nl_atom_i = number_tensor[nl_ij[:,0]]
+       nl_atom_j = number_tensor[nl_ij[:,1]]
+       nl_atom_pair = list(zip(nl_atom_i.tolist(),nl_atom_j.tolist()))
+       nl_cutoffs = torch.tensor(list(map(cutoffs.get, nl_atom_pair))).to(device)
+       nl_connected_indices = (nl_d < nl_cutoffs).nonzero(as_tuple=True)[0]
+       edge_index = nl_ij[nl_connected_indices,:].t()
+       edge_attr = nl_d[nl_connected_indices].to(torch.long)
 
     c = int(pos.shape[0])
     batch = []
