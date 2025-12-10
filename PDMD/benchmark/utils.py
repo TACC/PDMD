@@ -83,12 +83,12 @@ def generate_soap_force(number, pos, neighborlist_soap=None):
     else:
       system = Atoms(symbols=element_string, positions=pos)
       device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-      nl_ij = neighborlist_soap.compute(pos.to(device),
+      nl_ij = neighborlist_soap.compute(points=pos.to(device),
                                         box=float('inf') * torch.eye(3,dtype=torch.float64).to(device),
                                         periodic=False,
                                         quantities="P")[0]
-      sorted_values, sort_indices = torch.sort(nl_ij[:, 0])
-      sorted_nl_ij = nl_ij[sort_indices]
+      sorted_values, sorted_indices = torch.sort(nl_ij[:, 0])
+      sorted_nl_ij = nl_ij[sorted_indices]
       first_occurence_indices, unique_values = get_unique_elements_first_idx(sorted_values)
       first_occurence_indices = torch.cat((first_occurence_indices,torch.tensor([len(sorted_values)]).to(device)))
       subsystems = []
@@ -109,7 +109,7 @@ def generate_soap_force(number, pos, neighborlist_soap=None):
             one_hot_encoded = torch.tensor([0, 1])
         soap_fea.append(torch.hstack((one_hot_encoded, soap_descriptors[i])))
        
-      del subsystems, subsystem_centers
+      del subsystems, subsystem_centers, soap_descriptors, system, nl_ij, sorted_values, sorted_indices, sorted_nl_ij, nl_indices, first_occurence_indices, unique_values
 
     return soap_fea
 
@@ -135,9 +135,10 @@ def one_time_generate_forward_input_force(number, pos, forces_feature_min_values
 
        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
        number_tensor = torch.from_numpy(number).to(device)
-       box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
-       points = pos.to(device)
-       nl_ij, nl_d = neighborlist_chemgnn.compute(points=points,box=box,periodic=False,quantities="Pd")
+       nl_ij, nl_d = neighborlist_chemgnn.compute(points=pos,
+                                                  box=float('inf') * torch.eye(3,dtype=torch.float64).to(device),
+                                                  periodic=False,
+                                                  quantities="Pd")
        nl_atom_i = number_tensor[nl_ij[:,0]]
        nl_atom_j = number_tensor[nl_ij[:,1]]
        nl_atom_pair = list(zip(nl_atom_i.tolist(),nl_atom_j.tolist()))
@@ -145,6 +146,8 @@ def one_time_generate_forward_input_force(number, pos, forces_feature_min_values
        nl_connected_indices = (nl_d < nl_cutoffs).nonzero(as_tuple=True)[0]
        edge_index = nl_ij[nl_connected_indices,:].t()
        edge_attr = nl_d[nl_connected_indices].to(torch.long)
+
+       del number_tensor, nl_ij, nl_d, nl_atom_i, nl_atom_j, nl_atom_pair, nl_cutoffs, nl_connected_indices
 
     c = int(pos.shape[0])
     batch = []
@@ -191,12 +194,12 @@ def generate_soap_energy(number, pos, neighborlist_soap=None):
     else:
       system = Atoms(symbols=element_string, positions=pos)
       device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-      nl_ij = neighborlist_soap.compute(pos.to(device),
+      nl_ij = neighborlist_soap.compute(points=pos.to(device),
                                         box=float('inf') * torch.eye(3,dtype=torch.float64).to(device),
                                         periodic=False,
                                         quantities="P")[0]
-      sorted_values, sort_indices = torch.sort(nl_ij[:, 0])
-      sorted_nl_ij = nl_ij[sort_indices]
+      sorted_values, sorted_indices = torch.sort(nl_ij[:, 0])
+      sorted_nl_ij = nl_ij[sorted_indices]
       first_occurence_indices, unique_values = get_unique_elements_first_idx(sorted_values)
       first_occurence_indices = torch.cat((first_occurence_indices,torch.tensor([len(sorted_values)]).to(device)))
       subsystems = []
@@ -219,7 +222,7 @@ def generate_soap_energy(number, pos, neighborlist_soap=None):
              one_hot_encoded = torch.tensor([0, 1])
          tem.append(torch.hstack((one_hot_encoded, soap_descriptors[iatom])))
 
-      del subsystems, subsystem_centers
+      del subsystems, subsystem_centers, soap_descriptors, output_stream, system, nl_ij, sorted_values, sorted_indices, sorted_nl_ij, nl_indices, first_occurence_indices, unique_values
 
     return tem
 
@@ -242,9 +245,10 @@ def one_time_generate_forward_input_energy(number, pos, energy_feature_min_value
     else:
        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
        number_tensor = torch.from_numpy(number).to(device)
-       box = float('inf') * torch.eye(3,dtype=torch.float64).to(device)
-       points = pos.to(device)
-       nl_ij, nl_d = neighborlist_chemgnn.compute(points=points,box=box,periodic=False,quantities="Pd")
+       nl_ij, nl_d = neighborlist_chemgnn.compute(points=pos,
+                                                  box=float('inf') * torch.eye(3,dtype=torch.float64).to(device),
+                                                  periodic=False,
+                                                  quantities="Pd")
        nl_atom_i = number_tensor[nl_ij[:,0]]
        nl_atom_j = number_tensor[nl_ij[:,1]]
        nl_atom_pair = list(zip(nl_atom_i.tolist(),nl_atom_j.tolist()))
@@ -252,6 +256,8 @@ def one_time_generate_forward_input_energy(number, pos, energy_feature_min_value
        nl_connected_indices = (nl_d < nl_cutoffs).nonzero(as_tuple=True)[0]
        edge_index = nl_ij[nl_connected_indices,:].t()
        edge_attr = nl_d[nl_connected_indices].to(torch.long)
+
+       del number_tensor, nl_ij, nl_d, nl_atom_i, nl_atom_j, nl_atom_pair, nl_cutoffs, nl_connected_indices
 
     c = int(pos.shape[0])
     batch = []

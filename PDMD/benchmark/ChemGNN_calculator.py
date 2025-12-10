@@ -109,8 +109,9 @@ class ChemGNN_Calculator(Calculator):
 
   #convert positions to a torch tensor
   tensor_positions = torch.tensor(positions)
-  energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
-  forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
+  with torch.no_grad():
+      energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
+      forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
 
   #energy and forces unit conversion
   #the units for energy and forces in machine learning are Hartree and Hartree/Bohr, respectively
