@@ -29,33 +29,21 @@ class ChemGNN_Calculator(Calculator):
   # one for SOAP and the other for ChemGNN
   if (self.runtype == "md"):
    #set up a neighor list for SOAP 
-   #cutoff distance set to 10.0 angstrom
-   nl_cutoffs = 10.0
-   #buffer thickness set to 1.0 angstrom
-   nl_skin = 1.0
+   #cutoff distance set to a minimum of 10.0 angstrom, preferable at 13.0 for stable MD runs
+   nl_cutoffs = 13.0
    #no need to sort the neighbor list
-   nl_sorted = True 
-   #include an atom into its neighborlist
-   nl_self = True
+   nl_sorted = False 
    #double-count the neighborlist
    nl_bothways = True
-   #do not use scaled positions
-   nl_use_scaled_positions = False
    self.neighborlist_soap = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
 
    #set up a neighor list for ChemGNN 
    #cutoff distance set to 3.0 angstrom 
    nl_cutoffs = 3.0 
-   #buffer thickness set to 1.0 angstrom
-   nl_skin = 1.0
    #no need to sort the neighbor list
-   nl_sorted = True 
-   #exclude an atom from its neighborlist
-   nl_self = False 
+   nl_sorted = False 
    #double-count the neighborlist
    nl_bothways = True
-   #do not use scaled positions
-   nl_use_scaled_positions = False
    self.neighborlist_chemgnn = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
    print("NEIGHBOR LISTS CONSTRUCTED")
 
