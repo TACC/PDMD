@@ -73,10 +73,10 @@ def one_time_generate_forward_input_force(number, pos, CMA):
 
     max_value = []
     min_value = []
-    with open("./PDMD/benchmark/max_values_force_onehot_expand.txt", "r") as max_file:
+    with open("./PDMD/benchmark/max_values_force_round4.txt", "r") as max_file:
         for line in max_file:
             max_value.append(float(line.strip()))
-    with open("./PDMD/benchmark/min_values_force_onehot_expand.txt", "r") as min_file:
+    with open("./PDMD/benchmark/min_values_force_round4.txt", "r") as min_file:
         for line in min_file:
             min_value.append(float(line.strip()))
 
@@ -113,7 +113,7 @@ def one_time_generate_forward_input_force(number, pos, CMA):
     BTMA.fill_diagonal_(0)
     adj = DMA * BTMA
     edge_index = adj.nonzero(as_tuple=False).t().contiguous()
-    edge_attr = adj[edge_index[0], edge_index[1]].to(torch.long)
+    edge_attr = adj[edge_index[0], edge_index[1]]
     c = int(pos.shape[0])
     batch = []
     for i in range(int(c / len(number))):
@@ -159,10 +159,10 @@ def one_time_generate_forward_input_energy(number, pos, CMA):
 
     max_value = []
     min_value = []
-    with open("./PDMD/benchmark/max_values_energy_onehot_expand.txt", "r") as max_file:
+    with open("./PDMD/benchmark/max_values_energy_round4.txt", "r") as max_file:
         for line in max_file:
             max_value.append(float(line.strip()))
-    with open("./PDMD/benchmark/min_values_energy_onehot_expand.txt", "r") as min_file:
+    with open("./PDMD/benchmark/min_values_energy_round4.txt", "r") as min_file:
         for line in min_file:
             min_value.append(float(line.strip()))
 
@@ -195,7 +195,7 @@ def one_time_generate_forward_input_energy(number, pos, CMA):
     BTMA.fill_diagonal_(0)
     adj = DMA * BTMA
     edge_index = adj.nonzero(as_tuple=False).t().contiguous()
-    edge_attr = adj[edge_index[0], edge_index[1]].to(torch.long)
+    edge_attr = adj[edge_index[0], edge_index[1]]
     c = int(pos.shape[0])
     batch = []
     for i in range(int(c / len(number))):
