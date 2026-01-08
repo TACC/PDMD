@@ -11,7 +11,6 @@ from PDMD.benchmark.ChemGNN import CEALConv
 class ChemGNN_ForcesModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.edge_emb = Embedding(20, 10)
         self.conv_num = 2
         self.in_num = 722
         aggregators = ['sum', 'mean', 'min', 'max', 'std']
@@ -34,6 +33,7 @@ class ChemGNN_ForcesModel(torch.nn.Module):
             self.batch_norms.append(norms)
 
         self.pre_mlp = Sequential(Linear(self.in_num, self.in_num), ReLU())
+        self.edge_mlp = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
         self.force_predictor = Sequential(Linear(self.in_num, 300), ReLU(), Linear(300, 3))
 
     def forward(self, atomic_numbers, positions):
@@ -42,14 +42,15 @@ class ChemGNN_ForcesModel(torch.nn.Module):
         x, edge_index, edge_attr, batch = iter([x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.edge_emb = self.edge_emb.to(device)
+        self.edge_mlp = self.edge_mlp.to(device)
         self.batch_norms = self.batch_norms.to(device)
         self.convs = self.convs.to(device)
         self.pre_mlp = self.pre_mlp.to(device)
         self.force_predictor = self.force_predictor.to(device)
 
+        edge_attr = edge_attr.unsqueeze(-1)
         agg_weights = self.weights
-        edge_attr = self.edge_emb(edge_attr)
+        edge_attr = self.edge_mlp(edge_attr)
         # x = x.to(torch.float64)
         x = self.pre_mlp(x)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
