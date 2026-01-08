@@ -11,7 +11,6 @@ from PDMD.benchmark.ChemGNN import CEALConv
 class ChemGNN_EnergyModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.edge_emb = Embedding(20, 10)  # self.edge_emb = Embedding(4, 50)
         self.conv_num = 2
         self.in_num = 1262
         self.mid_num = 200
@@ -36,6 +35,7 @@ class ChemGNN_EnergyModel(torch.nn.Module):
             self.batch_norms.append(norms)
 
         self.pre_mlp = Sequential(Linear(1262, 1262), ReLU())
+        self.edge_mlp = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
         self.energy_predictor = Sequential(Linear(self.out_num, 100), ReLU(), Linear(100, 10), ReLU(), Linear(10, 1))
 
     def forward(self, atomic_numbers, tensor_positions):
@@ -49,13 +49,14 @@ class ChemGNN_EnergyModel(torch.nn.Module):
             [x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.edge_emb = self.edge_emb.to(device)
+        self.edge_mlp = self.edge_mlp.to(device)
         self.batch_norms = self.batch_norms.to(device)
         self.convs = self.convs.to(device)
         self.pre_mlp = self.pre_mlp.to(device)
         self.energy_predictor = self.energy_predictor.to(device)
 
-        edge_attr = self.edge_emb(edge_attr)
+        edge_attr = edge_attr.unsqueeze(-1)
+        edge_attr = self.edge_mlp(edge_attr)
         # x = x.to(torch.float64)
         x = self.pre_mlp(x)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
