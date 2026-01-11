@@ -113,7 +113,7 @@ def one_time_generate_forward_input_force(number, pos, CMA):
     BTMA.fill_diagonal_(0)
     adj = DMA * BTMA
     edge_index = adj.nonzero(as_tuple=False).t().contiguous()
-    edge_attr = adj[edge_index[0], edge_index[1]]
+    edge_attr = adj[edge_index[0], edge_index[1]].to(torch.float32)
     c = int(pos.shape[0])
     batch = []
     for i in range(int(c / len(number))):
@@ -195,7 +195,7 @@ def one_time_generate_forward_input_energy(number, pos, CMA):
     BTMA.fill_diagonal_(0)
     adj = DMA * BTMA
     edge_index = adj.nonzero(as_tuple=False).t().contiguous()
-    edge_attr = adj[edge_index[0], edge_index[1]]
+    edge_attr = adj[edge_index[0], edge_index[1]].to(torch.float32)
     c = int(pos.shape[0])
     batch = []
     for i in range(int(c / len(number))):
