@@ -36,8 +36,8 @@ class ChemGNN_ForcesModel(torch.nn.Module):
         self.edge_mlp = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
         self.force_predictor = Sequential(Linear(self.in_num, 300), ReLU(), Linear(300, 3))
 
-    def forward(self, atomic_numbers, positions):
-        x, self.CMA = one_time_generate_forward_input_force(atomic_numbers, positions, self.CMA)
+    def forward(self, atomic_numbers, positions, forces_feature_min_values, forces_feature_max_values):
+        x, self.CMA = one_time_generate_forward_input_force(atomic_numbers, positions, self.CMA, forces_feature_min_values, forces_feature_max_values)
         assert {"x", "edge_index", "edge_attr", "batch"}.issubset(x.keys())
         x, edge_index, edge_attr, batch = iter([x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
 
