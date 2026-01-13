@@ -54,15 +54,6 @@ class ChemGNN_Calculator(Calculator):
                                  map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                                  weights_only=False)
 
-  if ("min_energy_values" not in checkpoint_energy) or ("max_energy_values" not in checkpoint_energy):
-   if "min_energy_values" not in checkpoint_energy:
-    checkpoint_energy["min_energy_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/min_values_energy_round4.txt"),
-                                                          dtype=torch.float32)
-   if "max_energy_values" not in checkpoint_energy:
-    checkpoint_energy["max_energy_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/max_values_energy_round4.txt"),
-                                                          dtype=torch.float32)
-   torch.save(checkpoint_energy, self.energy_pth_filename)
-
   energy_model_state_dict = checkpoint_energy["model_state_dict"]
   energy_feature_min_values = checkpoint_energy["min_energy_values"]
   energy_feature_max_values = checkpoint_energy["max_energy_values"]
@@ -76,15 +67,6 @@ class ChemGNN_Calculator(Calculator):
   checkpoint_forces = torch.load(self.forces_pth_filename,
                                  map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                                  weights_only=False)
-
-  if ("min_force_values" not in checkpoint_forces) or ("max_force_values" not in checkpoint_forces):
-   if "min_force_values" not in checkpoint_forces:
-    checkpoint_forces["min_force_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/min_values_force_round4.txt"),
-                                                         dtype=torch.float32)
-   if "max_force_values" not in checkpoint_forces:
-    checkpoint_forces["max_force_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/max_values_force_round4.txt"),
-                                                         dtype=torch.float32)
-   torch.save(checkpoint_forces, self.forces_pth_filename)
 
   forces_model_state_dict = checkpoint_forces["model_state_dict"]
   forces_feature_min_values = checkpoint_forces["min_force_values"]
