@@ -68,24 +68,15 @@ def generate_soap_force(number, pos):
         soap_fea.append(soap_descriptors)
     return soap_fea
 
-def one_time_generate_forward_input_force(number, pos, CMA):
+def one_time_generate_forward_input_force(number, pos, CMA, forces_feature_min_values, forces_feature_max_values):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    max_value = []
-    min_value = []
-    with open("./PDMD/benchmark/max_values_force_round4.txt", "r") as max_file:
-        for line in max_file:
-            max_value.append(float(line.strip()))
-    with open("./PDMD/benchmark/min_values_force_round4.txt", "r") as min_file:
-        for line in min_file:
-            min_value.append(float(line.strip()))
 
     x_full = generate_soap_force(number, pos)
     x_full = torch.stack(x_full).to(device)
     x_full = x_full.to(torch.float32)
-    max_values = torch.tensor(max_value, dtype=torch.float32, device=device)
-    min_values = torch.tensor(min_value, dtype=torch.float32, device=device)
-    x_full = (x_full - min_values) / (max_values - min_values)
+    forces_feature_min_values = forces_feature_min_values.to(device).to(torch.float32)
+    forces_feature_max_values = forces_feature_max_values.to(device).to(torch.float32)
+    x_full = (x_full - forces_feature_min_values) / (forces_feature_max_values - forces_feature_min_values)
     # x_full = torch.stack(x_full)
     # for i in range(722):
     #     x_full[:, i] = tensor_min_max_scaler_1d(x_full[:, i], max=max_value[i], min=min_value[i])
@@ -154,24 +145,15 @@ def generate_soap_energy(number, pos):
         tem.append(soap_descriptors)
     return tem
 
-def one_time_generate_forward_input_energy(number, pos, CMA):
+def one_time_generate_forward_input_energy(number, pos, CMA, energy_feature_min_values, energy_feature_max_values):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    max_value = []
-    min_value = []
-    with open("./PDMD/benchmark/max_values_energy_round4.txt", "r") as max_file:
-        for line in max_file:
-            max_value.append(float(line.strip()))
-    with open("./PDMD/benchmark/min_values_energy_round4.txt", "r") as min_file:
-        for line in min_file:
-            min_value.append(float(line.strip()))
 
     x_full = generate_soap_energy(number, pos)
     x_full = torch.stack(x_full).to(device)
     x_full = x_full.to(torch.float32)
-    max_values = torch.tensor(max_value, dtype=torch.float32, device=device)
-    min_values = torch.tensor(min_value, dtype=torch.float32, device=device)
-    x_full = (x_full - min_values) / (max_values - min_values)
+    energy_feature_min_values = energy_feature_min_values.to(device).to(torch.float32)
+    energy_feature_max_values = energy_feature_max_values.to(device).to(torch.float32)
+    x_full = (x_full - energy_feature_min_values) / (energy_feature_max_values - energy_feature_min_values)
 
     pos = pos.to(device)
     DMA = torch.cdist(pos, pos)
