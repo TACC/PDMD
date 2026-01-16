@@ -183,7 +183,6 @@ class ENERGY_Model(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.model_name = "ChemGNN_energy"
-        self.edge_emb = Embedding(20, 10)
         self.conv_num = 2
         self.in_num = 1262
         self.mid_num = 200
@@ -207,16 +206,19 @@ class ENERGY_Model(torch.nn.Module):
             self.convs.append(conv)
             self.batch_norms.append(norms)
         self.pre_mlp = Sequential(Linear(1262, 1262), ReLU())
+        self.edge_mlp = Sequential(Linear(1,10))
         self.energy_predictor = Sequential(Linear(self.out_num, 100), ReLU(), Linear(100, 10), ReLU(), Linear(10, 1))
 
     def forward(self, input_dict):
         assert {"x", "edge_index", "edge_attr", "batch"}.issubset(input_dict.keys())
         node_attr, edge_index, edge_attr, batch = iter([input_dict.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
+        edge_attr = edge_attr.unsqueeze(-1)
         if torch.get_default_dtype() == torch.float64:
             node_attr = node_attr.to(torch.float64)
+            edge_attr = edge_attr.to(torch.float64)
 
         node_attr = self.pre_mlp(node_attr)
-        edge_attr = self.edge_emb(edge_attr)
+        edge_attr = self.edge_mlp(edge_attr)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
             node_attr = F.relu(batch_norm(conv(node_attr, edge_index, self.weights, edge_attr)))
 

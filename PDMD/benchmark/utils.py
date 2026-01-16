@@ -145,7 +145,7 @@ def one_time_generate_forward_input_force(number, pos, forces_feature_min_values
        nl_cutoffs = torch.tensor(list(map(cutoffs.get, nl_atom_pair))).to(device)
        nl_connected_indices = (nl_d < nl_cutoffs).nonzero(as_tuple=True)[0]
        edge_index = nl_ij[nl_connected_indices,:].t()
-       edge_attr = nl_d[nl_connected_indices].to(torch.long)
+       edge_attr = nl_d[nl_connected_indices]
 
        del number_tensor, nl_ij, nl_d, nl_atom_i, nl_atom_j, nl_atom_pair, nl_cutoffs, nl_connected_indices
 
@@ -255,7 +255,7 @@ def one_time_generate_forward_input_energy(number, pos, energy_feature_min_value
        nl_cutoffs = torch.tensor(list(map(cutoffs.get, nl_atom_pair))).to(device)
        nl_connected_indices = (nl_d < nl_cutoffs).nonzero(as_tuple=True)[0]
        edge_index = nl_ij[nl_connected_indices,:].t()
-       edge_attr = nl_d[nl_connected_indices].to(torch.long)
+       edge_attr = nl_d[nl_connected_indices]
 
        del number_tensor, nl_ij, nl_d, nl_atom_i, nl_atom_j, nl_atom_pair, nl_cutoffs, nl_connected_indices
 

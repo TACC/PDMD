@@ -27,25 +27,24 @@ class ChemGNN_Calculator(Calculator):
   
   # for MD runs, construct two neighbor lists
   # one for SOAP and the other for ChemGNN
-  if (self.runtype == "md"):
-   #set up a neighor list for SOAP 
-   #cutoff distance set to a minimum of 10.0 angstrom, preferable at 13.0 for stable MD runs
-   nl_cutoffs = 13.0
-   #no need to sort the neighbor list
-   nl_sorted = False 
-   #double-count the neighborlist
-   nl_bothways = True
-   self.neighborlist_soap = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
+  #set up a neighor list for SOAP 
+  #cutoff distance set to a minimum of 10.0 angstrom, preferable at 13.0 for stable MD runs
+  nl_cutoffs = 13.0
+  #no need to sort the neighbor list
+  nl_sorted = False 
+  #double-count the neighborlist
+  nl_bothways = True
+  self.neighborlist_soap = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
 
-   #set up a neighor list for ChemGNN 
-   #cutoff distance set to 3.0 angstrom 
-   nl_cutoffs = 3.0 
-   #no need to sort the neighbor list
-   nl_sorted = False 
-   #double-count the neighborlist
-   nl_bothways = True
-   self.neighborlist_chemgnn = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
-   print("NEIGHBOR LISTS CONSTRUCTED")
+  #set up a neighor list for ChemGNN 
+  #cutoff distance set to 3.0 angstrom 
+  nl_cutoffs = 3.0 
+  #no need to sort the neighbor list
+  nl_sorted = False 
+  #double-count the neighborlist
+  nl_bothways = True
+  self.neighborlist_chemgnn = NeighborList(cutoff = nl_cutoffs, full_list = nl_bothways, sorted = nl_sorted)
+  print("NEIGHBOR LISTS CONSTRUCTED")
 
   #load energy .pt model
   self.energy_model = ChemGNN_EnergyModel()
@@ -53,6 +52,14 @@ class ChemGNN_Calculator(Calculator):
   checkpoint_energy = torch.load(self.energy_pth_filename,
                                  map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                                  weights_only=False)
+
+  if ("min_energy_values" not in checkpoint_energy) or ("max_energy_values" not in checkpoint_energy):
+   if "min_energy_values" not in checkpoint_energy:
+    checkpoint_energy["min_energy_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/min_values_energy_round4.txt"),
+                                                          dtype=torch.float32)
+   if "max_energy_values" not in checkpoint_energy:
+    checkpoint_energy["max_energy_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/max_values_energy_round4.txt"),
+                                                          dtype=torch.float32)
 
   energy_model_state_dict = checkpoint_energy["model_state_dict"]
   energy_feature_min_values = checkpoint_energy["min_energy_values"]
@@ -67,6 +74,14 @@ class ChemGNN_Calculator(Calculator):
   checkpoint_forces = torch.load(self.forces_pth_filename,
                                  map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                                  weights_only=False)
+
+  if ("min_force_values" not in checkpoint_forces) or ("max_force_values" not in checkpoint_forces):
+   if "min_force_values" not in checkpoint_forces:
+    checkpoint_forces["min_force_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/min_values_force_round4.txt"),
+                                                         dtype=torch.float32)
+   if "max_force_values" not in checkpoint_forces:
+    checkpoint_forces["max_force_values"] = torch.tensor(np.loadtxt("./PDMD/benchmark/max_values_force_round4.txt"),
+                                                         dtype=torch.float32)
 
   forces_model_state_dict = checkpoint_forces["model_state_dict"]
   forces_feature_min_values = checkpoint_forces["min_force_values"]
@@ -98,8 +113,8 @@ class ChemGNN_Calculator(Calculator):
   #convert positions to a torch tensor
   tensor_positions = torch.tensor(positions)
   with torch.no_grad():
-      energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
-      forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
+       energy = self.energy_model(atomic_numbers,tensor_positions, self.energy_feature_min_values, self.energy_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
+       forces = self.forces_model(atomic_numbers,tensor_positions, self.forces_feature_min_values, self.forces_feature_max_values, self.neighborlist_soap, self.neighborlist_chemgnn)
 
   #energy and forces unit conversion
   #the units for energy and forces in machine learning are Hartree and Hartree/Bohr, respectively
