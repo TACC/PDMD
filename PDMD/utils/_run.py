@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 import torch
 import lightning
+from lightning.pytorch.callbacks import TQDMProgressBar
 import random
 import json
 from ..models import ENERGY_Model, FORCE_Model
@@ -346,7 +347,7 @@ def run(config):
     # initiatie a ChemLightning object named pdmdlightning for parallel training
     pdmdlightning = ChemLightning(model,config,model_save_path)
     # set up a trainer for pdmdlightning
-    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1, max_epochs=config.epoch)
+    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1, max_epochs=config.epoch, enable_progress_bar=True, callbacks=[TQDMProgressBar(refresh_rate=10)])
     trainer.fit(model=pdmdlightning, train_dataloaders=train_loader,val_dataloaders=val_loader)
 
     print("[Step 6] Saving final model...")
