@@ -57,10 +57,10 @@ class ChemGNN_Calculator(Calculator):
 
   if ("min_energy_values" not in checkpoint_energy) or ("max_energy_values" not in checkpoint_energy):
    if "min_energy_values" not in checkpoint_energy:
-    checkpoint_energy["min_energy_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/min_values_energy_round4.txt"),
+    checkpoint_energy["min_energy_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/min_values_energy.txt"),
                                                           dtype=torch.float32)
    if "max_energy_values" not in checkpoint_energy:
-    checkpoint_energy["max_energy_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/max_values_energy_round4.txt"),
+    checkpoint_energy["max_energy_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/max_values_energy.txt"),
                                                           dtype=torch.float32)
 
   energy_model_state_dict = checkpoint_energy["model_state_dict"]
@@ -79,10 +79,10 @@ class ChemGNN_Calculator(Calculator):
 
   if ("min_force_values" not in checkpoint_forces) or ("max_force_values" not in checkpoint_forces):
    if "min_force_values" not in checkpoint_forces:
-    checkpoint_forces["min_force_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/min_values_force_round4.txt"),
+    checkpoint_forces["min_force_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/min_values_force.txt"),
                                                          dtype=torch.float32)
    if "max_force_values" not in checkpoint_forces:
-    checkpoint_forces["max_force_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/max_values_force_round4.txt"),
+    checkpoint_forces["max_force_values"] = torch.tensor(np.loadtxt(os.path.dirname(os.path.abspath(PDMD.__file__))+"/benchmark/max_values_force.txt"),
                                                          dtype=torch.float32)
 
   forces_model_state_dict = checkpoint_forces["model_state_dict"]
