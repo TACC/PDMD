@@ -32,8 +32,8 @@ class ChemGNN_ForcesModel(torch.nn.Module):
             self.convs.append(conv)
             self.batch_norms.append(norms)
 
-        self.pre_mlp = Sequential(Linear(self.in_num, self.in_num), ReLU())
-        self.edge_mlp = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
+        self.node_embedding = Sequential(Linear(self.in_num, self.in_num), ReLU())
+        self.edge_embedding = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
         self.force_predictor = Sequential(Linear(self.in_num, 300), ReLU(), Linear(300, 3))
 
     def forward(self, atomic_numbers, positions, forces_feature_min_values, forces_feature_max_values, neighborlist_soap=None, neighborlist_chemgnn=None):
@@ -42,18 +42,17 @@ class ChemGNN_ForcesModel(torch.nn.Module):
         x, edge_index, edge_attr, batch = iter([x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.edge_mlp = self.edge_mlp.to(device)
+        self.edge_embedding = self.edge_embedding.to(device)
         self.batch_norms = self.batch_norms.to(device)
         self.convs = self.convs.to(device)
-        self.pre_mlp = self.pre_mlp.to(device)
+        self.node_embedding = self.node_embedding.to(device)
         self.force_predictor = self.force_predictor.to(device)
 
         edge_attr = edge_attr.unsqueeze(-1).to(torch.float32)
-        agg_weights = self.weights
-        edge_attr = self.edge_mlp(edge_attr)
-        x = self.pre_mlp(x)
+        edge_attr = self.edge_embedding(edge_attr)
+        x = self.node_embedding(x)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
-            x = F.relu(batch_norm(conv(x, edge_index, agg_weights, edge_attr)))
+            x = F.relu(batch_norm(conv(x, edge_index, self.weights, edge_attr)))
         x_force = self.force_predictor(x)
 
         force = x_force.cpu()
