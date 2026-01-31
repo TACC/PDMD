@@ -33,8 +33,8 @@ class ChemGNN_EnergyModel(torch.nn.Module):
             self.convs.append(conv)
             self.batch_norms.append(norms)
 
-        self.pre_mlp = Sequential(Linear(1262, 1262), ReLU())
-        self.edge_mlp = Sequential(Linear(1, 10))
+        self.node_embedding = Sequential(Linear(1262, 1262), ReLU())
+        self.edge_embedding = Sequential(Linear(1, 10))
         self.energy_predictor = Sequential(Linear(self.out_num, 100), ReLU(), Linear(100, 10), ReLU(), Linear(10, 1))
 
     def forward(self, atomic_numbers, tensor_positions, energy_feature_min_values, energy_feature_max_values, neighborlist_soap=None, neighborlist_chemgnn=None):
@@ -45,15 +45,15 @@ class ChemGNN_EnergyModel(torch.nn.Module):
             [x.get(one_key) for one_key in ["x", "edge_index", "edge_attr", "batch"]])
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.edge_mlp = self.edge_mlp.to(device)
+        self.edge_embedding = self.edge_embedding.to(device)
         self.batch_norms = self.batch_norms.to(device)
         self.convs = self.convs.to(device)
-        self.pre_mlp = self.pre_mlp.to(device)
+        self.node_embedding = self.node_embedding.to(device)
         self.energy_predictor = self.energy_predictor.to(device)
 
         edge_attr = edge_attr.unsqueeze(-1).to(torch.float32)
-        edge_attr = self.edge_mlp(edge_attr)
-        x = self.pre_mlp(x)
+        edge_attr = self.edge_embedding(edge_attr)
+        x = self.node_embedding(x)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
             x = F.relu(batch_norm(conv(x, edge_index, self.weights, edge_attr)))
 
