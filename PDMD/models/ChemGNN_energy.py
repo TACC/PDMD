@@ -205,8 +205,8 @@ class ENERGY_Model(torch.nn.Module):
                 norms = BatchNorm(self.out_num)
             self.convs.append(conv)
             self.batch_norms.append(norms)
-        self.pre_mlp = Sequential(Linear(1262, 1262), ReLU())
-        self.edge_mlp = Sequential(Linear(1,10))
+        self.node_embedding = Sequential(Linear(1262, 1262), ReLU())
+        self.edge_embedding = Sequential(Linear(1,10))
         self.energy_predictor = Sequential(Linear(self.out_num, 100), ReLU(), Linear(100, 10), ReLU(), Linear(10, 1))
 
     def forward(self, input_dict):
@@ -217,8 +217,8 @@ class ENERGY_Model(torch.nn.Module):
             node_attr = node_attr.to(torch.float64)
             edge_attr = edge_attr.to(torch.float64)
 
-        node_attr = self.pre_mlp(node_attr)
-        edge_attr = self.edge_mlp(edge_attr)
+        node_attr = self.node_embedding(node_attr)
+        edge_attr = self.edge_embedding(edge_attr)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
             node_attr = F.relu(batch_norm(conv(node_attr, edge_index, self.weights, edge_attr)))
 
