@@ -203,8 +203,8 @@ class FORCE_Model(torch.nn.Module):
                 norms = BatchNorm(self.in_num)
             self.convs.append(conv)
             self.batch_norms.append(norms)
-        self.pre_mlp = Sequential(Linear(self.in_num, self.in_num), ReLU())
-        self.edge_mlp = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
+        self.node_embedding = Sequential(Linear(self.in_num, self.in_num), ReLU())
+        self.edge_embedding = Sequential(Linear(1, 32), ReLU(), Linear(32, 10))
         self.force_predictor = Sequential(Linear(self.in_num, 300), ReLU(), Linear(300, 3))
 
     def forward(self, input_dict):
@@ -215,8 +215,8 @@ class FORCE_Model(torch.nn.Module):
             node_attr = node_attr.to(torch.float64)
             edge_attr = edge_attr.to(torch.float64)
 
-        node_attr = self.pre_mlp(node_attr)
-        edge_attr = self.edge_mlp(edge_attr)
+        node_attr = self.node_embedding(node_attr)
+        edge_attr = self.edge_embedding(edge_attr)
         for conv, batch_norm in zip(self.convs, self.batch_norms):
             node_attr = F.relu(batch_norm(conv(node_attr, edge_index, self.weights, edge_attr)))
 
