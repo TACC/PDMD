@@ -101,8 +101,8 @@ For example, on TACC's Vista cluster, the installation of CUDA-enabled Pytorch c
 (venv) ~/PDMD $ module purge
 (venv) ~/PDMD $ module reset
 (venv) ~/PDMD $ module load gcc/14.2.0
-(venv) ~/PDMD $ module load cuda/12.8
-(venv) ~/PDMD $ module load nccl/2.19.3
+(venv) ~/PDMD $ module load cuda/13.1
+(venv) ~/PDMD $ module load nccl/12.4
 (venv) ~/PDMD $ module load openmpi/5.0.5
 (venv) ~/PDMD $ module load python3_mpi/3.11.8
 ```
@@ -216,8 +216,8 @@ The table below show the training hyperparameters used in our experiments
 module purge
 module reset
 module load gcc/14.2.0
-module load cuda/12.8
-module load nccl/2.19.3
+module load cuda/13.1
+module load nccl/12.4
 module load openmpi/5.0.5
 module load python3_mpi/3.11.8
 
