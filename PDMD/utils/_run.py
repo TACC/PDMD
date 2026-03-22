@@ -199,6 +199,7 @@ def run(config):
     torch.manual_seed(config.seed)
     torch.cuda.manual_seed_all(config.seed)
     torch.backends.cudnn.deterministic = True
+    is_global_zero = int(os.environ.get("RANK", "0")) == 0
 
     config.timestring = get_timestring()
     model_config_print = config.__dict__.copy()
@@ -270,8 +271,7 @@ def run(config):
 
     print("[Step 3] Initializing model")
     main_save_path = osp.join(config.main_path, "saves", config.timestring)
-    if not os.path.exists(main_save_path):
-        os.makedirs(main_save_path)
+    os.makedirs(main_save_path, exist_ok=True)
 
     model_save_path = osp.join(main_save_path, "model_last.pt")
     model_restart_path = osp.join(main_save_path, "model_restart.pt")
@@ -320,19 +320,20 @@ def run(config):
     else:
         # no restart file was found
         initial_state_dict = model.state_dict()
-        torch.save(initial_state_dict, initial_model_state_path)
+        if is_global_zero:
+            torch.save(initial_state_dict, initial_model_state_path)
 
     print(model)
 
     print("[Step 4] Training...")
 
     log_dir = osp.join(config.main_path, 'logs')
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
 
     log_file_path = osp.join(log_dir, "record.txt")
-    with open(log_file_path, "w") as f:
-        f.write("")
+    if is_global_zero:
+        with open(log_file_path, "w") as f:
+            f.write("")
 
     start_time = time.time()
     start_time_0 = start_time
@@ -353,4 +354,5 @@ def run(config):
     print("[Step 6] Saving final model...")
 
     final_state_dict = model.state_dict()
-    torch.save(final_state_dict, final_model_state_path)
+    if is_global_zero:
+        torch.save(final_state_dict, final_model_state_path)
