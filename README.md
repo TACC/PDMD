@@ -243,10 +243,13 @@ test_true.npy
 ![MAE](images/MAE_scatter.jpg)
 The mean absolute errors (MAEs) of PDMD for (a) system energy, and (b) atomic force, across all (H<sub>2</sub>O)<sub>n</sub> clusters.
 
-# 4. Citation
+# 4. Parallel Scalability of PDMD Model Training
+![TrainingScalability](images/Training_scalability.jpg)
+
+# 5. Citation
 If you use the PDMD code and/or its dataset, please cite our papers titled "PDMD: Potential-free Data-driven Molecular Dynamics for Variable-sized Water Clusters" [https://doi.org/10.48550/arXiv.2412.04442](https://doi.org/10.48550/arXiv.2412.04442) and "Chemical Environment Adaptive Learning for Optical Band Gap Prediction of Doped Graphitic Carbon Nitride Nanosheets" [https://doi.org/10.1007/s00521-024-10775-1]   
 
-# 5. Questions
+# 6. Questions
 
 If you have any questions, please contact Dr. Hanning Chen via hchen@tacc.utexas.edu.
 
