@@ -3,7 +3,7 @@ PDMD: Potential-free Data-driven Molecular Dynamics (Version 3.0)
 
 # Overview
 This repository contains the code and data for the paper titled "Linear Scaling Potential-free Data-driven 
-Molecular Dynamics for Arbitrary-sized Water Clusters (H<sub>2</sub>O){n}". The PDMD framework leverages 
+Molecular Dynamics for Arbitrary-sized Water Clusters (H<sub>2</sub>O)<sub>n</sub>". The PDMD framework leverages 
 ChemGNN, a graph neural network model, and SOAP (Smooth Overlap of Atomic Positions) descriptors to accurately 
 and efficiently simulate the molecular dynamics (MD) of variable-sized water clusters with gas-to-liquid phase 
 transition. This approach is capable of generalizing to other molecular systems, making it a versatile tool for 
