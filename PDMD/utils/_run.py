@@ -348,7 +348,8 @@ def run(config):
     # initiatie a ChemLightning object named pdmdlightning for parallel training
     pdmdlightning = ChemLightning(model,config,model_save_path)
     # set up a trainer for pdmdlightning
-    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=1, max_epochs=config.epoch, enable_progress_bar=True, callbacks=[TQDMProgressBar(refresh_rate=10)])
+    n_devices = torch.cuda.device_count()
+    trainer = lightning.Trainer(num_nodes=nnodes, strategy="ddp",accelerator="gpu",devices=n_devices, max_epochs=config.epoch, enable_progress_bar=True, callbacks=[TQDMProgressBar(refresh_rate=10)])
     trainer.fit(model=pdmdlightning, train_dataloaders=train_loader,val_dataloaders=val_loader)
 
     print("[Step 6] Saving final model...")
