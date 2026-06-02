@@ -1,5 +1,6 @@
 import argparse
 from PDMD import run, benchmark, calculate_MAE
+from PDMD.utils._hypergraph import HyperGraphData
 from config import config
 
 
