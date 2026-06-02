@@ -67,9 +67,9 @@ class ChemLightning(lightning.LightningModule):
             optimizer.zero_grad()
             input_dict = dict({
                 "x": batch.x,
-               "edge_index": batch.edge_index,
-                "edge_attr": batch.edge_attr,
-                "batch": batch.batch
+                "batch": batch.batch,
+                "hyperedge_index": batch.hyperedge_index,
+                "hyperedge_attr": batch.hyperedge_attr,
             })
             out = model(input_dict)
 
@@ -92,9 +92,9 @@ class ChemLightning(lightning.LightningModule):
             optimizer.zero_grad()
             input_dict = dict({
                 "x": batch.x,
-                "edge_index": batch.edge_index,
-                "edge_attr": batch.edge_attr,
-                "batch": batch.batch
+                "batch": batch.batch,
+                "hyperedge_index": batch.hyperedge_index,
+                "hyperedge_attr": batch.hyperedge_attr
             })
             out = model(input_dict)
 
@@ -130,9 +130,9 @@ class ChemLightning(lightning.LightningModule):
        if model_name == "ChemGNN_energy":
                input_dict = dict({
                 "x": batch.x,
-                "edge_index": batch.edge_index,
-                "edge_attr": batch.edge_attr,
-                "batch": batch.batch
+                "batch": batch.batch,
+                "hyperedge_index": batch.hyperedge_index,
+                "hyperedge_attr": batch.hyperedge_attr,
                })
                out = model(input_dict)
                mybatch = input_dict["batch"]
@@ -145,9 +145,9 @@ class ChemLightning(lightning.LightningModule):
        if model_name == "ChemGNN_forces":
                input_dict = dict({
                 "x": batch.x,
-                "edge_index": batch.edge_index,
-                "edge_attr": batch.edge_attr,
-                "batch": batch.batch
+                "batch": batch.batch,
+                "hyperedge_index": batch.hyperedge_index,
+                "hyperedge_attr": batch.hyperedge_attr
                })
                out = model(input_dict)
                val_loss = (out.squeeze() - batch.z).abs().mean()
@@ -235,7 +235,7 @@ def run(config):
     trainset_list.append(dataset)
     dataset = MutilWaterDataset(root=dataset_path, split=f"Water_optimized_test_{data_type}")
     valset_list.append(dataset)
-
+    
     for i in range(1, 22):
         dataset = MutilWaterDataset(root=dataset_path, split=f"Water{i}_{data_type}")
         tr_data, v_data, te_data = split_dataset(dataset, train_p=config.train_ratio, val_p=config.val_ratio,
@@ -344,7 +344,7 @@ def run(config):
     gradients_list = []
 
     # get the number of SLURM nodes
-    nnodes = int(os.getenv("SLURM_NNODES"))
+    nnodes = int(os.getenv("SLURM_NNODES","1"))
     # initiatie a ChemLightning object named pdmdlightning for parallel training
     pdmdlightning = ChemLightning(model,config,model_save_path)
     # set up a trainer for pdmdlightning
