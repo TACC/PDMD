@@ -8,6 +8,159 @@ import contextlib
 import numpy as np
 from torch_scatter import scatter
 
+def compute_angles(pos: torch.Tensor, idx: torch.Tensor,
+                       eps: float = 1e-12, to_degrees: bool = False
+                      ) -> torch.Tensor:
+    """
+    Compute bond angles for a list of atom triplets.
+
+    Parameters
+    ----------
+    pos : torch.Tensor, shape (N, 3)
+        Cartesian coordinates of the N atoms (float32 or float64).
+    idx : torch.Tensor, shape (3, M)
+        For each row (i, j, k) the angle ∠i‑j‑k is computed,
+        i.e. the angle at atom j between the vectors  i→j and k→j.
+    eps : float, optional
+        Small value added to the denominator for numerical stability.
+    to_degrees : bool, optional
+        If True, return angles in degrees; otherwise in radians (default).
+
+    Returns
+    -------
+    angles : torch.Tensor, shape (M,)
+        The computed angles (one per triplet).
+    """
+    pos_i = pos[idx[0, :]]
+    pos_j = pos[idx[1, :]]
+    pos_k = pos[idx[2, :]]
+    v_ij = pos_i - pos_j
+    v_kj = pos_k - pos_j
+    norm_ij = torch.norm(v_ij, dim=1, keepdim=True).clamp(min=eps)
+    norm_kj = torch.norm(v_kj, dim=1, keepdim=True).clamp(min=eps)
+    v_ij_norm = v_ij / norm_ij
+    v_kj_norm = v_kj / norm_kj
+    cos_angle = (v_ij_norm * v_kj_norm).sum(dim=1)
+    cos_angle = cos_angle.clamp(-1.0, 1.0)
+    angle_rad = torch.acos(cos_angle)
+    if to_degrees:
+        angle_rad = angle_rad * 180.0 / torch.pi
+
+    return angle_rad
+
+def edges_to_angles(edges: torch.Tensor) -> torch.Tensor:
+    """Build the ``3 x M`` hyperedge tensor from a ``2 x N`` edge tensor.
+
+    Parameters
+    ----------
+    edges : Tensor
+        ``(2, N)`` integer tensor of node-id pairs. May live on CPU or CUDA.
+
+    Returns
+    -------
+    Tensor
+        ``(3, M)`` tensor on the same device/dtype as ``edges``; middle row is
+        the shared node, columns sorted by ``(c, a, b)``, all columns unique.
+    """
+    if edges.dim() != 2 or edges.size(0) != 2:
+        raise ValueError(f"`edges` must have shape (2, N); got {tuple(edges.shape)}")
+
+    device, dtype = edges.device, edges.dtype
+    empty = torch.empty((3, 0), device=device, dtype=dtype)
+
+    if edges.size(1) == 0:
+        return empty
+
+    u, v = edges[0], edges[1]
+
+    # 1. Expand each undirected edge {u, v} into both incidences (center, other).
+    center = torch.cat((u, v))
+    other = torch.cat((v, u))
+
+    # 2. Drop self-loops: a shared node cannot also be one of the arms.
+    keep = center != other
+    center, other = center[keep], other[keep]
+    if center.numel() == 0:
+        return empty
+
+    # 3. Deduplicate (center, other) so parallel/duplicate edges add no
+    #    redundant arms. Sorting the packed key also groups by center (step 4).
+    pair_key = torch.stack((center, other), dim=1)
+    pair_key = torch.unique(pair_key, dim=0)  # sorted lexicographically by (center, other)
+    center, other = pair_key[:, 0].contiguous(), pair_key[:, 1].contiguous()
+
+    # 4. Per-center contiguous groups (already sorted by `unique`).
+    uniq_c, counts = torch.unique_consecutive(center, return_counts=True)
+    group_start = counts.cumsum(0) - counts                 # first flat index of each group
+    deg = counts                                            # neighbours per center
+
+    # Each element pairs with the neighbours that follow it inside its group.
+    # For flat element p at local position l in a group of size k:
+    #   #partners(p) = k - 1 - l
+    pos = torch.arange(center.numel(), device=device)
+    local_pos = pos - group_start.repeat_interleave(deg)    # l for every element
+    group_deg = deg.repeat_interleave(deg)                  # k for every element
+    n_partners = group_deg - 1 - local_pos                  # partners following p
+
+    total_pairs = int(n_partners.sum())
+    if total_pairs == 0:
+        return empty
+
+    # 5. Vectorised segmented pair generation.
+    #    `first`  : repeat each element p, n_partners[p] times.
+    #    `second` : p+1, p+2, ... p+n_partners[p]  (the following neighbours).
+    first = pos.repeat_interleave(n_partners)
+    block_start = (n_partners.cumsum(0) - n_partners)       # start offset in pair space per element
+    within = torch.arange(total_pairs, device=device) - block_start.repeat_interleave(n_partners)
+    second = first + 1 + within
+
+    a = other[first]                  # one arm
+    c = center[first]                 # shared node (== center[second])
+    b = other[second]                 # other arm; sorted => a < b, a != b guaranteed
+
+    return torch.stack((a, c, b), dim=0).to(dtype)
+
+
+def hyperedge_to_incidence(hyperedge_matrix: torch.Tensor,
+                           hyperedge_attr: torch.Tensor):
+    """Convert an N x M hyperedge matrix into a 2 x Q hyperedge incidence
+    matrix and a 1 x R hyperedge attribute tensor, also producing a
+    conjugate (node-order-reversed) copy for each hyperedge.
+
+    Args:
+        hyperedge_matrix: ``(N, M)`` int64 tensor. Entry ``(i, j)`` is the
+            index of the i-th node of the j-th hyperedge.
+        hyperedge_attr: ``(1, M)`` tensor of per-hyperedge attributes.
+
+    Returns:
+        incidence: ``(2, Q)`` int64 tensor. Row 0 holds node indices, row 1
+            holds the corresponding hyperedge indices. ``Q = R * N``.
+        new_attr: ``(1, R)`` tensor where ``R = 2 * M``. Hyperedges
+            ``[0, M)`` are the originals; ``[M, 2M)`` are their conjugates,
+            inheriting the original attributes.
+    """
+    if hyperedge_matrix.dim() != 2:
+        raise ValueError(f"hyperedge_matrix must be 2-D, got shape {tuple(hyperedge_matrix.shape)}")
+    N, M = hyperedge_matrix.shape
+
+    attr_flat = hyperedge_attr.reshape(-1)
+    if attr_flat.numel() != M:
+        raise ValueError(f"hyperedge_attr must have M={M} elements, got {attr_flat.numel()}")
+
+    device = hyperedge_matrix.device
+    he = hyperedge_matrix.to(torch.long)
+
+    conjugates = torch.flip(he, dims=[0])              # (N, M)
+    all_he = torch.cat([he, conjugates], dim=1)        # (N, 2M)
+    R = 2 * M
+
+    node_indices = all_he.t().reshape(-1)              # (2M*N,) row-major over hyperedges
+    hyperedge_indices = torch.arange(R, device=device, dtype=torch.long).repeat_interleave(N)
+
+    incidence = torch.stack([node_indices, hyperedge_indices], dim=0)
+    new_attr = torch.cat([attr_flat, attr_flat])
+    return incidence, new_attr
+
 def get_unique_elements_first_idx(tensor):
     unique, inverse = torch.unique(tensor, sorted=True, return_inverse=True)
     perm = torch.arange(inverse.size(0), dtype=inverse.dtype, device=inverse.device)
@@ -154,10 +307,26 @@ def one_time_generate_forward_input_force(number, pos, forces_feature_min_values
     for i in range(int(c / len(number))):
         batch += [i] * len(number)
     batch = torch.tensor(batch).to(device)
+
+#convert the edge_attr from the old pair-wise format to the new hyperedge incidence matrix format
+#for two-body interactions only, i.e., bonds
+    hyperedge_base_index = 0
+    hyperedge_bond_index, hyperedge_bond_attr = hyperedge_to_incidence(edge_index, edge_attr)
+    hyperedge_bond_index[1,:] = hyperedge_bond_index[1,:] + hyperedge_base_index
+#for three-body interactions only, i.e. angles 
+    angle_index = edges_to_angles(edge_index)
+    angle_attr = compute_angles(pos, angle_index)
+    hyperedge_base_index = hyperedge_base_index + hyperedge_bond_attr.size(0)
+    hyperedge_angle_index, hyperedge_angle_attr  = hyperedge_to_incidence(angle_index, angle_attr)
+    hyperedge_angle_index[1,:] = hyperedge_angle_index[1,:] +  hyperedge_base_index
+#concatecate the two-body and three-body interactions 
+    hyperedge_index = torch.cat((hyperedge_bond_index,hyperedge_angle_index),dim=1)
+    hyperedge_attr = torch.cat((hyperedge_bond_attr,hyperedge_angle_attr))
+
     x = dict({
         "x": x_full,
-        "edge_index": edge_index,
-        "edge_attr": edge_attr,
+        "hyperedge_index": hyperedge_index,
+        "hyperedge_attr": hyperedge_attr,
         "batch": batch
     })
     return x 
@@ -265,10 +434,25 @@ def one_time_generate_forward_input_energy(number, pos, energy_feature_min_value
         batch += [i] * len(number)
     batch = torch.tensor(batch).to(device)
 
+#convert the edge_attr from the old pair-wise format to the new hyperedge incidence matrix format
+#for two-body interactions only, i.e., bonds
+    hyperedge_base_index = 0
+    hyperedge_bond_index, hyperedge_bond_attr = hyperedge_to_incidence(edge_index, edge_attr)
+    hyperedge_bond_index[1,:] = hyperedge_bond_index[1,:] + hyperedge_base_index
+#for three-body interactions only, i.e. angles 
+    angle_index = edges_to_angles(edge_index)
+    angle_attr = compute_angles(pos, angle_index)
+    hyperedge_base_index = hyperedge_base_index + hyperedge_bond_attr.size(0)
+    hyperedge_angle_index, hyperedge_angle_attr  = hyperedge_to_incidence(angle_index, angle_attr)
+    hyperedge_angle_index[1,:] = hyperedge_angle_index[1,:] +  hyperedge_base_index
+#concatecate the two-body and three-body interactions 
+    hyperedge_index = torch.cat((hyperedge_bond_index,hyperedge_angle_index),dim=1)
+    hyperedge_attr = torch.cat((hyperedge_bond_attr,hyperedge_angle_attr))
+
     x = dict({
         "x": x_full,
-        "edge_index": edge_index,
-        "edge_attr": edge_attr,
+        "hyperedge_index": hyperedge_index,
+        "hyperedge_attr": hyperedge_attr,
         "batch": batch
     })
 

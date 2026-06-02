@@ -1,4 +1,3 @@
-from .ChemGNN import *
 from .ChemGNN_calculator import *
 from .ChemGNN_energy import *
 from .ChemGNN_forces import *
@@ -7,7 +6,6 @@ from .mdchemgnn import *
 from .utils import *
 
 __all__ = [
-    'CEALConv',
     'ChemGNN_Calculator',
     'ChemGNN_EnergyModel',
     'ChemGNN_ForcesModel',
