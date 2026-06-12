@@ -16,7 +16,7 @@ class ChemGNN_ForcesModel(torch.nn.Module):
         aggregators = ['sum', 'mean', 'min', 'max', 'std']
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.weights = torch.nn.Parameter(torch.rand(len(aggregators)))
-        self.hyperedge_order = 2
+        self.hyperedge_order = 3
         self.hyperedge_weights = torch.nn.Parameter(torch.rand(self.hyperedge_order - 1).to(device))
         self.convs = ModuleList()
         self.batch_norms = ModuleList()
@@ -25,13 +25,13 @@ class ChemGNN_ForcesModel(torch.nn.Module):
             if _ == 0:
                 conv = HyperCEALConv(in_channels=self.in_num, out_channels=self.in_num, weights=self.weights,
                                 aggregators=aggregators, edge_dim=10, towers=1, pre_layers=1, post_layers=1,
-                                hyperedge_order=2, hyperedge_weights=self.hyperedge_weights,
+                                hyperedge_order=self.hyperedge_order, hyperedge_weights=self.hyperedge_weights,
                                 divide_input=False)
                 norms = BatchNorm(self.in_num)
             else:
                 conv = HyperCEALConv(in_channels=self.in_num, out_channels=self.in_num, weights=self.weights,
                                 aggregators=aggregators, edge_dim=10, towers=1, pre_layers=1, post_layers=1,
-                                hyperedge_order=2, hyperedge_weights=self.hyperedge_weights,
+                                hyperedge_order=self.hyperedge_order, hyperedge_weights=self.hyperedge_weights,
                                 divide_input=False)
                 norms = BatchNorm(self.in_num)
             self.convs.append(conv.to(device))
