@@ -29,13 +29,13 @@ class FORCE_Model(torch.nn.Module):
             if _ == 0:
                 conv = HyperCEALConv(in_channels=self.in_num, out_channels=self.in_num, weights=self.weights,
                                 aggregators=aggregators, edge_dim=10, towers=1, pre_layers=1, post_layers=1,
-                                hyperedge_order=2, hyperedge_weights=self.hyperedge_weights,
+                                hyperedge_order=self.hyperedge_order, hyperedge_weights=self.hyperedge_weights,
                                 divide_input=False)
                 norms = BatchNorm(self.in_num)
             else:
                 conv = HyperCEALConv(in_channels=self.in_num, out_channels=self.in_num, weights=self.weights,
                                 aggregators=aggregators, edge_dim=10, towers=1, pre_layers=1, post_layers=1,
-                                hyperedge_order=2, hyperedge_weights=self.hyperedge_weights,
+                                hyperedge_order=self.hyperedge_order, hyperedge_weights=self.hyperedge_weights,
                                 divide_input=False)
                 norms = BatchNorm(self.in_num)
             self.convs.append(conv)
