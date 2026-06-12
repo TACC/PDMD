@@ -22,7 +22,7 @@ class ENERGY_Model(torch.nn.Module):
         self.out_num = 20
         aggregators = ['sum', 'mean', 'min', 'max', 'std']
         self.weights = torch.nn.Parameter(torch.rand(len(aggregators)))
-        self.hyperedge_order = 2
+        self.hyperedge_order = 3
         self.hyperedge_weights = torch.nn.Parameter(torch.rand(self.hyperedge_order - 1))
         self.convs = ModuleList()
         self.batch_norms = ModuleList()
