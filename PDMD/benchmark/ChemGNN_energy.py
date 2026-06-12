@@ -18,7 +18,7 @@ class ChemGNN_EnergyModel(torch.nn.Module):
         aggregators = ['sum', 'mean', 'min', 'max', 'std']
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.weights = torch.nn.Parameter(torch.rand(len(aggregators)).to(device))
-        self.hyperedge_order = 2
+        self.hyperedge_order = 3
         self.hyperedge_weights = torch.nn.Parameter(torch.rand(self.hyperedge_order - 1))
         self.convs = ModuleList()
         self.batch_norms = ModuleList()
