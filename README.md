@@ -251,10 +251,14 @@ Scalabiity of PDMD model training over TACC's Grace-Hopper superchip nodes
 ![PDMDScalability](images/PDMD_scalability.jpg)
 Molecular dynamics throughput by PDMD and DFT as a function of the number of water molecules on a single Intel Xeon Platinum 8380 node at TACC. 
 
-# 6. Citation
+# 6. Comparison with Other Molecular Machine-Learning Models on Accuracy
+![Comparison](images/Comparison_MAEs.jpg)
+Accuracy comparison of DeepMD, GNNFF, MACE, NequIP, SevenNet, and PDMD with respect to (a) system energy, and (b) atomic force, showing the average mean absolute errors (MAE) and their standard deviations over water cluster size.  
+
+# 7. Citation
 If you use the PDMD code and/or its dataset, please cite our papers titled "Linear Scaling Potential-free Data-driven Molecular Dynamics for Arbitrary-sized Water Clusters (H<sub>2</sub>O)<sub>n</sub>" [https://doi.org/10.48550/arXiv.2412.04442](https://doi.org/10.48550/arXiv.2412.04442) and "Chemical Environment Adaptive Learning for Optical Band Gap Prediction of Doped Graphitic Carbon Nitride Nanosheets" [https://doi.org/10.1007/s00521-024-10775-1]   
 
-# 7. Questions
+# 8. Questions
 
 If you have any questions, please contact Dr. Hanning Chen via hchen@tacc.utexas.edu.
 
