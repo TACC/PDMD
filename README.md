@@ -253,7 +253,7 @@ Molecular dynamics throughput by PDMD and DFT as a function of the number of wat
 
 # 6. Comparison with Other Molecular Machine-Learning Models on Accuracy
 ![Comparison](images/Comparison_MAEs.jpg)
-Accuracy comparison of DeepMD, GNNFF, MACE, NequIP, SevenNet, and PDMD with respect to (a) system energy, and (b) atomic force, showing the average mean absolute errors (MAE) and their standard deviations over water cluster size.  
+Accuracy comparison of DeepMD, GNNFF, MACE, NequIP, SevenNet, and PDMD with respect to (a) system energy, and (b) atomic force, showing the average mean absolute errors (MAE) and their standard deviations over water cluster size. The dataset for water clusters in the formats compatible with DeepMD, MACE, NequIP, SevenNet, and GNNFF can be downloaded from https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/PDMD_DATASET_Other_Formats.tar.gz[https://taccchen.s3.us-east-2.amazonaws.com/PDMD_DATASET/PDMD_DATASET_Other_Formats.tar.gz]. 
 
 # 7. Citation
 If you use the PDMD code and/or its dataset, please cite our papers titled "Linear Scaling Potential-free Data-driven Molecular Dynamics for Arbitrary-sized Water Clusters (H<sub>2</sub>O)<sub>n</sub>" [https://doi.org/10.48550/arXiv.2412.04442](https://doi.org/10.48550/arXiv.2412.04442) and "Chemical Environment Adaptive Learning for Optical Band Gap Prediction of Doped Graphitic Carbon Nitride Nanosheets" [https://doi.org/10.1007/s00521-024-10775-1]   
